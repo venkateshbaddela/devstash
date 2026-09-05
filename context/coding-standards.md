@@ -50,7 +50,9 @@ Example v4 configuration:
 
 ## File Organization
 
-- Components: `src/components/[feature]/ComponentName.tsx`
+- Layout Components: `src/components/layout/[name].tsx`
+- Feature Components: `src/components/[feature]/[name].tsx`
+- UI Primitives: `src/components/ui/[name].tsx`
 - Pages: `src/app/[route]/page.tsx`
 - Server Actions: `src/actions/[feature].ts`
 - Types: `src/types/[feature].ts`

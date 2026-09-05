@@ -13,17 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Devstash",
-  description: "Devstash",
+  title: "DevStash — Developer Knowledge Hub",
+  description:
+    "Fast, searchable, developer-native knowledge hub for snippets, prompts, commands, notes, links, files, and images.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} dark`}
+      style={{ colorScheme: "dark" }}
     >
-      <body>{children}</body>
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        {children}
+      </body>
     </html>
   );
 }
