@@ -1,9 +1,13 @@
 import { Pin } from "lucide-react";
-import { items } from "@/lib/mock-data";
 import { ItemCard } from "@/components/dashboard/item-card";
+import { getPinnedItems, type DashboardItem } from "@/lib/db/items";
 
-export function PinnedItems() {
-  const pinnedItems = items.filter((item) => item.isPinned);
+interface PinnedItemsProps {
+  items?: DashboardItem[];
+}
+
+export async function PinnedItems({ items: propItems }: PinnedItemsProps = {}) {
+  const pinnedItems = propItems ?? (await getPinnedItems());
 
   if (pinnedItems.length === 0) {
     return null;

@@ -1,9 +1,13 @@
 import { Clock } from "lucide-react";
-import { items } from "@/lib/mock-data";
 import { ItemCard } from "@/components/dashboard/item-card";
+import { getRecentItems, type DashboardItem } from "@/lib/db/items";
 
-export function RecentItems() {
-  const recentItems = items.slice(0, 10);
+interface RecentItemsProps {
+  items?: DashboardItem[];
+}
+
+export async function RecentItems({ items: propItems }: RecentItemsProps = {}) {
+  const recentItems = propItems ?? (await getRecentItems());
 
   if (recentItems.length === 0) {
     return null;

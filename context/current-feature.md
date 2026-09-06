@@ -1,29 +1,36 @@
 # Current Feature
 
-**Feature:** Dashboard Collections (Neon Database Integration)  
+**Feature:** Dashboard Items (Neon Database Integration)  
 **Status:** Completed  
-**Spec:** `context/features/dashboard-collections-spec.md`
+**Spec:** `context/features/dashboard-items-spec.md`
 
 ### Requirements
-- Create `src/lib/db/collections.ts` with data fetching functions
-- Fetch collections directly in server component from Neon PostgreSQL using Prisma
-- Derive collection card border color from the most-used content type in that collection
-- Show small icons of all types in that collection
-- Keep the current design matching screenshot (`@context/screenshots/dashboard-ui-main.png`)
-- Update collection stats display
-- Do not add items underneath yet
+- Create `src/lib/db/items.ts` with data fetching functions for pinned and recent items
+- Fetch items directly in server component from Neon PostgreSQL using Prisma
+- Derive item card icon and left accent border from its item type
+- Render item tags, badges, and metadata matching existing design (`@context/screenshots/dashboard-ui-main.png`)
+- Hide the pinned items section completely if there are no pinned items
+- Update stats display to show live item counts from the database
 
 ### References
-- `context/features/dashboard-collections-spec.md`
+- `context/features/dashboard-items-spec.md`
 - `context/screenshots/dashboard-ui-main.png`
 - `context/project-overview.md`
 - `context/session-handover.md`
-- `src/lib/mock-data.ts`
 - `src/lib/prisma.ts`
 
 ---
 
 ## History
+
+### Dashboard Items Database Integration (2026-09-06)
+
+- Created `src/lib/db/items.ts` to query pinned items, recent items, and item counts for demo user (`demo@devstash.io`) via Prisma.
+- Connected `PinnedItems` and `RecentItems` to live database queries with automatic hiding when no pinned items exist.
+- Derived item card icon and left border accent dynamically from each item's system item type (`itemType`).
+- Rendered item tags, status badges (pin, star), and relative dates matching design.
+- Updated `StatsCards` to show live counts for `totalItems` and `favoriteItems`, fully retiring mock data from overview stats.
+- Verified build and lint (`npm run build`, `npm run lint`).
 
 ### Dashboard Collections Database Integration (2026-09-06)
 

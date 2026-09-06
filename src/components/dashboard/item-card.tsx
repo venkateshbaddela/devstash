@@ -10,7 +10,8 @@ import {
   Pin,
   type LucideIcon,
 } from "lucide-react";
-import type { Item } from "@/lib/mock-data";
+import type { Item as MockItem } from "@/lib/mock-data";
+import type { DashboardItem } from "@/lib/db/items";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Code,
@@ -20,14 +21,23 @@ const ICON_MAP: Record<string, LucideIcon> = {
   File,
   Image: ImageIcon,
   Link: LinkIcon,
+  // System item type name mappings
+  snippet: Code,
+  prompt: Sparkles,
+  command: Terminal,
+  note: StickyNote,
+  file: File,
+  image: ImageIcon,
+  link: LinkIcon,
 };
 
 interface ItemCardProps {
-  item: Item;
+  item: DashboardItem | MockItem;
 }
 
 export function ItemCard({ item }: ItemCardProps) {
-  const IconComponent = ICON_MAP[item.typeIcon] || Code;
+  const IconComponent =
+    ICON_MAP[item.typeIcon] || ICON_MAP[item.type] || Code;
 
   return (
     <article
