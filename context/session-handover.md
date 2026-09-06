@@ -6,8 +6,8 @@
 
 ## 1. Project Snapshot (Current State)
 
-- **Git Branch:** `main` (clean working tree, up to date with `origin/main`)
-- **Last Commit:** `460ac42` (`feat: implement database seed data per specification`)
+- **Git Branch:** `main` (ahead of `origin/main` by 1 commit)
+- **Last Commit:** `8008517` (`feat: connect dashboard collections to live neon database`)
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data.
 
@@ -17,9 +17,9 @@
 
 ### A. Frontend UI (Dashboard Prototype)
 - **App Shell:** Dark mode UI, responsive collapsible Sidebar (`src/components/layout/sidebar.tsx`), dynamic mobile Sheet drawer, and top bar with search (`src/components/layout/top-bar.tsx`).
-- **Dashboard (`/dashboard`):** 4 metric cards (Total Items, Collections, Favorites), `CollectionsGrid` with left border accents, `ItemCard` component, `PinnedItems`, and `RecentItems`.
+- **Dashboard (`/dashboard`):** 4 metric cards, `CollectionsGrid` with live dynamic left border accents and type icons, `ItemCard` component, `PinnedItems`, and `RecentItems`.
 - **Dynamic Route (`/items/[type]`):** Filtered item list view with breadcrumb navigation.
-- *Note:* UI currently imports mock data from `src/lib/mock-data.ts`. The next step will be connecting UI to live database queries.
+- *Note:* Collections grid and collection stats are connected to live database queries (`src/lib/db/collections.ts`). Items underneath (`PinnedItems` and `RecentItems`) still use mock data pending next phase.
 
 ### B. Database & Backend Architecture (Prisma 7 + Neon)
 - **Database:** Neon Serverless PostgreSQL (`ep-jolly-fire-a5ldwe0z.us-east-2.aws.neon.tech`).
@@ -70,6 +70,6 @@ npm run db:seed     # Run prisma db seed
 ---
 
 ## 5. Logical Next Step
-
-The database is completely set up and seeded. The logical next feature is:
-- **Connect Dashboard UI to Live Database:** Replace `src/lib/mock-data.ts` in `/dashboard` and `/items/[type]` with Server Components / Server Actions fetching real data from `prisma` for the demo user (`demo@devstash.io`).
+ 
+Collections are now connected to the database. The logical next feature is:
+- **Connect Dashboard Items to Live Database:** Replace `mock-data.ts` in `PinnedItems` and `RecentItems` with server queries for the demo user (`demo@devstash.io`). See `context/features/dashboard-items-spec.md`.
