@@ -17,6 +17,7 @@ import {
   Settings,
   Layers,
   PanelLeft,
+  LayoutDashboard,
   type LucideIcon,
 } from "lucide-react";
 import { useSidebar } from "@/components/layout/sidebar-context";
@@ -99,6 +100,21 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
 
         {/* Navigation Sections */}
         <div className="px-3 py-3 space-y-3">
+          {/* Dashboard Navigation */}
+          <Link
+            href="/dashboard"
+            onClick={handleLinkClick}
+            className={cn(
+              "group flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150",
+              pathname === "/dashboard"
+                ? "bg-accent text-accent-foreground font-semibold"
+                : "text-zinc-300 hover:text-white hover:bg-muted/50"
+            )}
+          >
+            <LayoutDashboard className="size-4 text-zinc-400 group-hover:text-zinc-200 shrink-0 transition-colors" />
+            <span className="truncate">Dashboard</span>
+          </Link>
+
           {/* Types Section */}
           <div className="space-y-1">
             <button

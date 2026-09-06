@@ -7,6 +7,17 @@
 
 ## History
 
+### Dashboard UI Phase 3 (2026-09-06)
+
+- Implemented 4 overview stats cards (`Total Items`, `Collections`, `Favorite Items`, `Favorite Collections`).
+- Implemented `CollectionsGrid` with custom accent left borders, favorite indicators, and color-coded type icons matching design reference.
+- Built reusable `ItemCard` component supporting left accent borders, type icon badges, pin/favorite status, relative dates, descriptions, and tag pills.
+- Implemented `PinnedItems` section and `RecentItems` section displaying 10 recent items.
+- Expanded `mock-data.ts` to 12 items spanning all 7 system item types.
+- Added top-level `Dashboard` navigation item to the sidebar with active route highlighting.
+- Added breadcrumb navigation on `/items/[type]` page and integrated `ItemCard` for uniform styling.
+
+
 ### Initial Setup (2026-09-05)
 
 - Initialized Next.js 16 (App Router), React 19, TypeScript, and Tailwind CSS v4.

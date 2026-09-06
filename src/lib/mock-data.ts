@@ -169,6 +169,178 @@ Provide actionable remediation guidance with code examples for each issue found.
     createdAt: 'January 8, 2024',
     updatedAt: 'January 8, 2024',
   },
+  {
+    id: 'item-5',
+    title: 'PostgreSQL Connection Pooling Guide',
+    type: 'Notes',
+    typeIcon: 'StickyNote',
+    typeColor: '#fde047',
+    description: 'Production best practices for Neon & Prisma connection pooling in serverless environments',
+    content: `# Neon + Prisma Connection Pooling
+- Use direct connection for Prisma migrations: DIRECT_URL
+- Use pooled connection string for runtime queries: DATABASE_URL
+- Configure pgBouncer connection limit according to concurrency tier`,
+    language: 'markdown',
+    tags: ['database', 'postgres', 'prisma'],
+    collections: ['Context Files'],
+    isPinned: true,
+    isFavorite: true,
+    date: 'Jan 7',
+    createdAt: 'January 7, 2024',
+    updatedAt: 'January 7, 2024',
+  },
+  {
+    id: 'item-6',
+    title: 'Docker Multi-Stage Next.js Build',
+    type: 'Snippets',
+    typeIcon: 'Code',
+    typeColor: '#3b82f6',
+    description: 'Optimized multi-stage Dockerfile producing minimal standalone Next.js image',
+    content: `FROM node:20-alpine AS base
+FROM base AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+EXPOSE 3000
+CMD ["node", "server.js"]`,
+    language: 'dockerfile',
+    tags: ['docker', 'nextjs', 'devops'],
+    collections: ['React Patterns'],
+    isPinned: false,
+    isFavorite: false,
+    date: 'Jan 6',
+    createdAt: 'January 6, 2024',
+    updatedAt: 'January 6, 2024',
+  },
+  {
+    id: 'item-7',
+    title: 'Tailwind CSS v4 Documentation',
+    type: 'Links',
+    typeIcon: 'Link',
+    typeColor: '#10b981',
+    description: 'Official v4 release documentation highlighting CSS-first configuration and @theme directive',
+    content: 'https://tailwindcss.com/docs/v4-beta',
+    language: 'url',
+    tags: ['css', 'tailwind', 'documentation'],
+    collections: ['React Patterns'],
+    isPinned: false,
+    isFavorite: true,
+    date: 'Jan 5',
+    createdAt: 'January 5, 2024',
+    updatedAt: 'January 5, 2024',
+  },
+  {
+    id: 'item-8',
+    title: 'Kill Process Running on Specific Port',
+    type: 'Commands',
+    typeIcon: 'Terminal',
+    typeColor: '#f97316',
+    description: 'One-liner to locate and terminate any process listening on port 3000',
+    content: 'lsof -ti :3000 | xargs kill -9',
+    language: 'bash',
+    tags: ['cli', 'bash', 'networking'],
+    collections: ['Git Commands'],
+    isPinned: false,
+    isFavorite: false,
+    date: 'Jan 4',
+    createdAt: 'January 4, 2024',
+    updatedAt: 'January 4, 2024',
+  },
+  {
+    id: 'item-9',
+    title: 'Cloud Architecture Overview Diagram',
+    type: 'Images',
+    typeIcon: 'Image',
+    typeColor: '#ec4899',
+    description: 'High-level AWS & Cloudflare edge routing architecture diagram for media assets',
+    content: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8',
+    language: 'image',
+    tags: ['architecture', 'cloud', 'diagram'],
+    collections: ['Context Files'],
+    isPinned: false,
+    isFavorite: false,
+    date: 'Jan 3',
+    createdAt: 'January 3, 2024',
+    updatedAt: 'January 3, 2024',
+  },
+  {
+    id: 'item-10',
+    title: 'Production .env Configuration Template',
+    type: 'Files',
+    typeIcon: 'File',
+    typeColor: '#6b7280',
+    description: 'Sanitized environment variables schema for staging and production deployments',
+    content: `DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
+NEXTAUTH_SECRET="super-secret-key-at-least-32-chars"
+NEXTAUTH_URL="https://app.devstash.dev"
+CLOUDFLARE_R2_ACCESS_KEY_ID=""
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=""
+STRIPE_SECRET_KEY=""
+STRIPE_WEBHOOK_SECRET=""`,
+    language: 'shell',
+    tags: ['env', 'security', 'deployment'],
+    collections: ['Context Files'],
+    isPinned: false,
+    isFavorite: true,
+    date: 'Jan 2',
+    createdAt: 'January 2, 2024',
+    updatedAt: 'January 2, 2024',
+  },
+  {
+    id: 'item-11',
+    title: 'System Prompt for Technical Writer',
+    type: 'Prompts',
+    typeIcon: 'Sparkles',
+    typeColor: '#8b5cf6',
+    description: 'Persona prompt designed to convert engineering RFCs into clear developer docs',
+    content: `You are an expert developer documentation writer. Given the following engineering RFC or PR description, extract:
+1. Summary of changes and why they matter.
+2. Step-by-step setup or migration guide.
+3. Code examples with TypeScript types.
+Maintain a concise, direct tone.`,
+    language: 'markdown',
+    tags: ['ai', 'prompts', 'docs'],
+    collections: ['AI Prompts'],
+    isPinned: false,
+    isFavorite: false,
+    date: 'Dec 30',
+    createdAt: 'December 30, 2023',
+    updatedAt: 'December 30, 2023',
+  },
+  {
+    id: 'item-12',
+    title: 'React Server Components Best Practices',
+    type: 'Notes',
+    typeIcon: 'StickyNote',
+    typeColor: '#fde047',
+    description: 'Core rules for data fetching, caching boundaries, and passing props across client-server boundaries',
+    content: `# RSC Best Practices
+- Keep components as Server Components by default
+- Move 'use client' boundaries down to the leaves of the render tree
+- Never pass sensitive database connection objects to client components
+- Parallelize independent data fetches with Promise.all`,
+    language: 'markdown',
+    tags: ['react', 'rsc', 'nextjs'],
+    collections: ['React Patterns'],
+    isPinned: false,
+    isFavorite: true,
+    date: 'Dec 28',
+    createdAt: 'December 28, 2023',
+    updatedAt: 'December 28, 2023',
+  },
 ]
 
 export const mockData = {
