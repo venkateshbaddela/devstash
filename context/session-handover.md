@@ -6,8 +6,8 @@
 
 ## 1. Project Snapshot (Current State)
 
-- **Git Branch:** `main` (ahead of `origin/main` by 1 commit)
-- **Last Commit:** `8008517` (`feat: connect dashboard collections to live neon database`)
+- **Git Branch:** `main` (ahead of `origin/main` by 3 commits)
+- **Last Commit:** `957fbd4` (`feat: connect dashboard pinned and recent items to live database`)
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data.
 
@@ -15,11 +15,13 @@
 
 ## 2. What We Have Built So Far
 
-### A. Frontend UI (Dashboard Prototype)
+### A. Frontend UI (Dashboard)
 - **App Shell:** Dark mode UI, responsive collapsible Sidebar (`src/components/layout/sidebar.tsx`), dynamic mobile Sheet drawer, and top bar with search (`src/components/layout/top-bar.tsx`).
-- **Dashboard (`/dashboard`):** 4 metric cards, `CollectionsGrid` with live dynamic left border accents and type icons, `ItemCard` component, `PinnedItems`, and `RecentItems`.
+- **Dashboard (`/dashboard`):** 100% live database-driven!
+  - 4 live metric cards (Total Items, Collections, Favorites).
+  - `CollectionsGrid` with live dynamic left border accents and item type icons (`src/lib/db/collections.ts`).
+  - `PinnedItems` and `RecentItems` sections with live item data, tags, and type indicators (`src/lib/db/items.ts`).
 - **Dynamic Route (`/items/[type]`):** Filtered item list view with breadcrumb navigation.
-- *Note:* Collections grid and collection stats are connected to live database queries (`src/lib/db/collections.ts`). Items underneath (`PinnedItems` and `RecentItems`) still use mock data pending next phase.
 
 ### B. Database & Backend Architecture (Prisma 7 + Neon)
 - **Database:** Neon Serverless PostgreSQL (`ep-jolly-fire-a5ldwe0z.us-east-2.aws.neon.tech`).
@@ -71,5 +73,6 @@ npm run db:seed     # Run prisma db seed
 
 ## 5. Logical Next Step
  
-Collections are now connected to the database. The logical next feature is:
-- **Connect Dashboard Items to Live Database:** Replace `mock-data.ts` in `PinnedItems` and `RecentItems` with server queries for the demo user (`demo@devstash.io`). See `context/features/dashboard-items-spec.md`.
+Both collections and items on the dashboard are now fully connected to the live Neon database. The logical next tasks are:
+1. **Connect Dynamic Route (`/items/[type]`):** Replace `mock-data.ts` in `/items/[type]` with live queries filtering items by system item type.
+2. **Item Quick-View Drawer:** Implement slide-over item details drawer with syntax highlighting, copy-to-clipboard, tags, and actions per `project-overview.md`.
