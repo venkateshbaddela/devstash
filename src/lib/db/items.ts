@@ -177,3 +177,83 @@ export async function getItemStats(userId?: string): Promise<ItemStats> {
     favoriteItems,
   };
 }
+
+export interface SidebarItemType {
+  id: string;
+  name: string;
+  displayName: string;
+  icon: string;
+  color: string;
+  count: number;
+  href: string;
+}
+
+const SYSTEM_ORDER: Record<string, number> = {
+  snippet: 1,
+  prompt: 2,
+  command: 3,
+  note: 4,
+  file: 5,
+  image: 6,
+  link: 7,
+};
+
+const DISPLAY_NAMES: Record<string, string> = {
+  snippet: "Snippets",
+  prompt: "Prompts",
+  command: "Commands",
+  note: "Notes",
+  file: "Files",
+  image: "Images",
+  link: "Links",
+};
+
+/**
+ * Fetches system item types with live item counts for the sidebar navigation.
+ */
+export async function getSidebarItemTypes(
+  userId?: string
+): Promise<SidebarItemType[]> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+  if (!targetUserId) return [];
+
+  const [types, counts] = await Promise.all([
+    prisma.itemType.findMany({
+      where: { isSystem: true },
+    }),
+    prisma.item.groupBy({
+      by: ["itemTypeId"],
+      where: { userId: targetUserId },
+      _count: { id: true },
+    }),
+  ]);
+
+  const countMap = new Map<string, number>();
+  for (const c of counts) {
+    countMap.set(c.itemTypeId, c._count.id);
+  }
+
+  return types
+    .sort((a, b) => {
+      const orderA = SYSTEM_ORDER[a.name.toLowerCase()] ?? 99;
+      const orderB = SYSTEM_ORDER[b.name.toLowerCase()] ?? 99;
+      return orderA - orderB;
+    })
+    .map((type) => {
+      const lower = type.name.toLowerCase();
+      const displayName =
+        DISPLAY_NAMES[lower] ||
+        type.name.charAt(0).toUpperCase() + type.name.slice(1);
+
+      return {
+        id: type.id,
+        name: type.name,
+        displayName,
+        icon: type.icon,
+        color: type.color,
+        count: countMap.get(type.id) ?? 0,
+        href: `/items/${type.name}`,
+      };
+    });
+}
+

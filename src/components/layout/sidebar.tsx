@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Folder,
   Star,
+  ArrowRight,
   Settings,
   Layers,
   PanelLeft,
@@ -21,7 +22,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useSidebar } from "@/components/layout/sidebar-context";
-import { currentUser, itemTypes, collections } from "@/lib/mock-data";
+import {
+  currentUser as mockUser,
+  itemTypes as mockItemTypes,
+  collections as mockCollections,
+} from "@/lib/mock-data";
+import type { SidebarItemType } from "@/lib/db/items";
+import type { DashboardCollection } from "@/lib/db/collections";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sheet,
@@ -41,20 +48,95 @@ const ICON_MAP: Record<string, LucideIcon> = {
   File,
   Image: ImageIcon,
   Link: LinkIcon,
+  // System item type name mappings
+  snippet: Code,
+  prompt: Sparkles,
+  command: Terminal,
+  note: StickyNote,
+  file: File,
+  image: ImageIcon,
+  link: LinkIcon,
 };
 
-function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
+export interface SidebarUser {
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
+export interface SidebarNavType {
+  id: string;
+  name: string;
+  displayName: string;
+  icon: string;
+  color: string;
+  count: number;
+  href?: string;
+}
+
+export interface SidebarNavCollection {
+  id: string;
+  name: string;
+  itemCount: number;
+  isFavorite: boolean;
+  accentColor?: string;
+  color?: string | null;
+}
+
+export interface SidebarProps {
+  itemTypes?: SidebarItemType[];
+  collections?: DashboardCollection[];
+  user?: SidebarUser;
+}
+
+function SidebarContent({
+  isMobile = false,
+  itemTypes: propItemTypes,
+  collections: propCollections,
+  user: propUser,
+}: {
+  isMobile?: boolean;
+  itemTypes?: SidebarItemType[];
+  collections?: DashboardCollection[];
+  user?: SidebarUser;
+}) {
   const pathname = usePathname();
   const { closeMobile } = useSidebar();
 
+  const user = propUser ?? {
+    name: mockUser.name || "Demo User",
+    email: mockUser.email || "demo@devstash.io",
+    avatarUrl: mockUser.avatarUrl || "",
+  };
+
+  const userInitials = React.useMemo(() => {
+    if (!user.name) return "DU";
+    const parts = user.name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return user.name.slice(0, 2).toUpperCase();
+  }, [user.name]);
+
+  const itemTypes: SidebarNavType[] = React.useMemo(() => {
+    if (propItemTypes) return propItemTypes;
+    return mockItemTypes.map((t) => ({
+      ...t,
+      displayName: t.name,
+      href: `/items/${t.name.toLowerCase()}`,
+    }));
+  }, [propItemTypes]);
+
+  const collections: SidebarNavCollection[] = propCollections ?? mockCollections;
+
   const favoriteCollections = React.useMemo(
     () => collections.filter((c) => c.isFavorite),
-    []
+    [collections]
   );
 
   const recentCollections = React.useMemo(
     () => collections.filter((c) => !c.isFavorite),
-    []
+    [collections]
   );
 
   const [isTypesOpen, setIsTypesOpen] = React.useState(true);
@@ -135,13 +217,20 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
             {isTypesOpen && (
               <nav className="space-y-0.5 pt-0.5" aria-label="Item Types">
                 {itemTypes.map((type) => {
-                  const IconComponent = ICON_MAP[type.icon] || Code;
-                  const typeHref = `/items/${type.id}`;
-                  const isActive = pathname === typeHref;
+                  const IconComponent =
+                    ICON_MAP[type.icon] || ICON_MAP[type.name] || Code;
+                  const displayName = type.displayName || type.name;
+                  const typeHref = type.href || `/items/${type.name}`;
+
+                  const isActive =
+                    pathname === typeHref ||
+                    pathname === `/items/${type.name}` ||
+                    pathname === `/items/${type.name}s` ||
+                    pathname === `/items/${type.id}`;
 
                   return (
                     <Link
-                      key={type.id}
+                      key={type.id || type.name}
                       href={typeHref}
                       onClick={handleLinkClick}
                       className={cn(
@@ -156,7 +245,7 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
                           className="size-4 shrink-0 transition-transform duration-150 group-hover:scale-110"
                           style={{ color: type.color }}
                         />
-                        <span className="truncate">{type.name}</span>
+                        <span className="truncate">{displayName}</span>
                       </div>
                       <span className="text-xs text-muted-foreground tabular-nums shrink-0 font-normal">
                         {type.count}
@@ -179,7 +268,10 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
               className="group/btn flex w-full items-center justify-between px-2 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               aria-expanded={isCollectionsOpen}
             >
-              <span>Collections</span>
+              <div className="flex items-center gap-1.5">
+                <Folder className="size-3.5 text-muted-foreground/70 group-hover/btn:text-foreground transition-colors" />
+                <span>Collections</span>
+              </div>
               <ChevronDown
                 className={cn(
                   "size-3.5 text-muted-foreground/70 transition-transform duration-200 group-hover/btn:text-foreground",
@@ -191,71 +283,99 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
             {isCollectionsOpen && (
               <div className="space-y-3 pt-0.5">
                 {/* Favorites */}
-                <div className="space-y-0.5">
-                  <div className="px-2 pb-1 text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
-                    Favorites
-                  </div>
-                  <nav className="space-y-0.5" aria-label="Favorite Collections">
-                    {favoriteCollections.map((col) => {
-                      const colHref = `/dashboard?collection=${col.id}`;
-                      const isActive = pathname === colHref;
+                {favoriteCollections.length > 0 && (
+                  <div className="space-y-0.5">
+                    <div className="px-2 pb-1 text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
+                      Favorites
+                    </div>
+                    <nav className="space-y-0.5" aria-label="Favorite Collections">
+                      {favoriteCollections.map((col) => {
+                        const colHref = `/dashboard?collection=${col.id}`;
+                        const isActive = pathname === colHref;
 
-                      return (
-                        <Link
-                          key={col.id}
-                          href={colHref}
-                          onClick={handleLinkClick}
-                          className={cn(
-                            "group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all duration-150",
-                            isActive
-                              ? "bg-accent text-accent-foreground font-semibold"
-                              : "text-zinc-300 hover:text-white hover:bg-muted/50"
-                          )}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Folder className="size-4 text-zinc-400 group-hover:text-zinc-200 shrink-0 transition-colors" />
-                            <span className="truncate">{col.name}</span>
-                          </div>
-                          <Star className="size-3.5 text-amber-400 fill-amber-400 shrink-0" />
-                        </Link>
-                      );
-                    })}
-                  </nav>
-                </div>
+                        return (
+                          <Link
+                            key={col.id}
+                            href={colHref}
+                            onClick={handleLinkClick}
+                            className={cn(
+                              "group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all duration-150",
+                              isActive
+                                ? "bg-accent text-accent-foreground font-semibold"
+                                : "text-zinc-300 hover:text-white hover:bg-muted/50"
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <Star className="size-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                              <span className="truncate">{col.name}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground tabular-nums shrink-0 font-normal">
+                              {col.itemCount}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </nav>
+                  </div>
+                )}
 
                 {/* All / Recent Collections */}
-                <div className="space-y-0.5">
-                  <div className="px-2 pt-1 pb-1 text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
-                    All Collections
-                  </div>
-                  <nav className="space-y-0.5" aria-label="Recent Collections">
-                    {recentCollections.map((col) => {
-                      const colHref = `/dashboard?collection=${col.id}`;
-                      const isActive = pathname === colHref;
+                {recentCollections.length > 0 && (
+                  <div className="space-y-0.5">
+                    <div className="px-2 pt-1 pb-1 text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
+                      Recent Collections
+                    </div>
+                    <nav className="space-y-0.5" aria-label="Recent Collections">
+                      {recentCollections.map((col) => {
+                        const colHref = `/dashboard?collection=${col.id}`;
+                        const isActive = pathname === colHref;
+                        const circleColor =
+                          col.accentColor ||
+                          ("color" in col && col.color ? (col.color as string) : undefined) ||
+                          "#3b82f6";
 
-                      return (
-                        <Link
-                          key={col.id}
-                          href={colHref}
-                          onClick={handleLinkClick}
-                          className={cn(
-                            "group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all duration-150",
-                            isActive
-                              ? "bg-accent text-accent-foreground font-semibold"
-                              : "text-zinc-300 hover:text-white hover:bg-muted/50"
-                          )}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Folder className="size-4 text-zinc-400 group-hover:text-zinc-200 shrink-0 transition-colors" />
-                            <span className="truncate">{col.name}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground tabular-nums shrink-0 font-normal">
-                            {col.itemCount}
-                          </span>
-                        </Link>
-                      );
-                    })}
-                  </nav>
+                        return (
+                          <Link
+                            key={col.id}
+                            href={colHref}
+                            onClick={handleLinkClick}
+                            className={cn(
+                              "group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-sm transition-all duration-150",
+                              isActive
+                                ? "bg-accent text-accent-foreground font-semibold"
+                                : "text-zinc-300 hover:text-white hover:bg-muted/50"
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {/* Colored circle based on the most-used item type */}
+                              <div className="flex size-4 items-center justify-center shrink-0">
+                                <span
+                                  className="size-2 rounded-full"
+                                  style={{ backgroundColor: circleColor }}
+                                />
+                              </div>
+                              <span className="truncate">{col.name}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground tabular-nums shrink-0 font-normal">
+                              {col.itemCount}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </nav>
+                  </div>
+                )}
+
+                {/* "View all collections" link */}
+                <div className="pt-1.5 px-2">
+                  <Link
+                    href="/collections"
+                    onClick={handleLinkClick}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5 group/all"
+                  >
+                    <span>View all collections</span>
+                    <ArrowRight className="size-3.5 text-muted-foreground/70 group-hover/all:text-foreground transition-transform group-hover/all:translate-x-0.5 shrink-0" />
+                  </Link>
                 </div>
               </div>
             )}
@@ -268,17 +388,19 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
         <div className="flex items-center justify-between gap-3 p-1 rounded-lg hover:bg-muted/40 transition-colors">
           <div className="flex items-center gap-2.5 min-w-0">
             <Avatar className="size-8 bg-zinc-200 text-zinc-900 shrink-0">
-              <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
+              {user.avatarUrl ? (
+                <AvatarImage src={user.avatarUrl} alt={user.name} />
+              ) : null}
               <AvatarFallback className="bg-zinc-200 text-zinc-900 font-medium text-xs">
-                JD
+                {userInitials}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col min-w-0 text-left leading-tight">
               <span className="text-sm font-medium text-foreground truncate">
-                {currentUser.name}
+                {user.name}
               </span>
               <span className="text-xs text-muted-foreground truncate">
-                {currentUser.email}
+                {user.email}
               </span>
             </div>
           </div>
@@ -297,7 +419,11 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({
+  itemTypes,
+  collections,
+  user,
+}: SidebarProps = {}) {
   const { isCollapsed, isMobileOpen, setIsMobileOpen } = useSidebar();
 
   return (
@@ -309,7 +435,11 @@ export function Sidebar() {
           isCollapsed ? "w-0 border-r-0 opacity-0" : "w-64 opacity-100"
         )}
       >
-        <SidebarContent />
+        <SidebarContent
+          itemTypes={itemTypes}
+          collections={collections}
+          user={user}
+        />
       </aside>
 
       {/* Mobile Drawer (Always a drawer on mobile view) */}
@@ -325,7 +455,12 @@ export function Sidebar() {
               Browse item types and collections in DevStash
             </SheetDescription>
           </SheetHeader>
-          <SidebarContent isMobile />
+          <SidebarContent
+            isMobile
+            itemTypes={itemTypes}
+            collections={collections}
+            user={user}
+          />
         </SheetContent>
       </Sheet>
     </>

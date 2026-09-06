@@ -1,27 +1,36 @@
 # Current Feature
 
-**Feature:** Dashboard Items (Neon Database Integration)  
+**Feature:** Stats & Sidebar (Neon Database Integration)  
 **Status:** Completed  
-**Spec:** `context/features/dashboard-items-spec.md`
+**Spec:** `context/features/stats-sidebar-spec.md`
 
 ### Requirements
-- Create `src/lib/db/items.ts` with data fetching functions for pinned and recent items
-- Fetch items directly in server component from Neon PostgreSQL using Prisma
-- Derive item card icon and left accent border from its item type
-- Render item tags, badges, and metadata matching existing design (`@context/screenshots/dashboard-ui-main.png`)
-- Hide the pinned items section completely if there are no pinned items
-- Update stats display to show live item counts from the database
+- Display stats in the main area from live database data, preserving design and layout
+- Display system item types in the sidebar with icons, live item counts, and links to `/items/[typename]`
+- Add "View all collections" link under the collections list in the sidebar linking to `/collections`
+- Keep star icons for favorite collections; for recents, display a colored circle based on the most-used item type in each collection
+- Add database helper functions in `src/lib/db/` for sidebar data (item types with counts and collections)
 
 ### References
-- `context/features/dashboard-items-spec.md`
-- `context/screenshots/dashboard-ui-main.png`
+- `context/features/stats-sidebar-spec.md`
 - `context/project-overview.md`
 - `context/session-handover.md`
-- `src/lib/prisma.ts`
+- `src/lib/db/collections.ts`
+- `src/lib/db/items.ts`
+- `src/components/layout/sidebar.tsx`
 
 ---
 
 ## History
+
+### Stats & Sidebar Database Integration (2026-09-06)
+
+- Added `getSidebarItemTypes` in `src/lib/db/items.ts` to fetch system item types with live item counts per user.
+- Updated `DashboardLayout` to fetch sidebar item types and collections from Neon database on the server.
+- Connected `Sidebar` to live database types and collections, linking types to `/items/[typename]`.
+- Implemented colored circle indicators for recent collections derived from the most-used item type.
+- Refined collection layout: star icons on the left with item counts on the right for favorites, folder icon on Collections header (left of text), and Lucide ArrowRight icon on "View all collections".
+- Verified build and lint (`npm run build`, `npm run lint`).
 
 ### Dashboard Items Database Integration (2026-09-06)
 

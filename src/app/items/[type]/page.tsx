@@ -10,8 +10,13 @@ export default async function ItemTypePage({
   params: Promise<{ type: string }>;
 }) {
   const { type } = await params;
+  const normalizedType = type.toLowerCase();
   const itemType = itemTypes.find(
-    (t) => t.id.toLowerCase() === type.toLowerCase()
+    (t) =>
+      t.id.toLowerCase() === normalizedType ||
+      t.name.toLowerCase() === normalizedType ||
+      t.id.toLowerCase().replace(/s$/, "") === normalizedType.replace(/s$/, "") ||
+      t.name.toLowerCase().replace(/s$/, "") === normalizedType.replace(/s$/, "")
   );
 
   if (!itemType) {
