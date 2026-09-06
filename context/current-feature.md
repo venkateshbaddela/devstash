@@ -7,6 +7,22 @@
 
 ## History
 
+### Neon Postgres & Prisma Setup (2026-09-06)
+
+- Initialized Prisma 7 (`7.10.0`) with Neon PostgreSQL (serverless).
+- Configured Prisma 7 breaking change: datasource connection URLs managed in `prisma.config.ts` (`DIRECT_URL` for migrations, `DATABASE_URL` for pooled queries).
+- Implemented full Prisma schema (`prisma/schema.prisma`):
+  - NextAuth models: `User`, `Account`, `Session`, `VerificationToken`.
+  - Core knowledge models: `ItemType`, `Item`, `Collection`, `ItemCollection`, `Tag`, `ItemTag`, and `ContentType` enum.
+  - Performance indexes on `[userId, createdAt]`, `[userId, isPinned]`, `[userId, isFavorite]`, and `[userId, itemTypeId]`.
+  - Applied industry-standard `@@map` table mapping to lowercase plural names (`users`, `items`, `collections`, `item_types`, `accounts`, etc.).
+  - Cascade deletes on all child relationships.
+- Created singleton client in `src/lib/prisma.ts` using `@prisma/adapter-pg`.
+- Applied initial migration `20260906092547_init` via `prisma migrate dev` (no direct `db push`).
+- Created and executed seed script `prisma/seed.ts` via `prisma db seed` populating initial data from `mock-data.ts`.
+- Verified `prisma migrate status`, `npm run build`, and `npm run lint`.
+
+
 ### Dashboard UI Phase 3 (2026-09-06)
 
 - Implemented 4 overview stats cards (`Total Items`, `Collections`, `Favorite Items`, `Favorite Collections`).
