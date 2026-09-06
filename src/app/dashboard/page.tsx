@@ -2,8 +2,17 @@ import { StatsCards } from "@/components/dashboard/stats-cards";
 import { CollectionsGrid } from "@/components/dashboard/collections-grid";
 import { PinnedItems } from "@/components/dashboard/pinned-items";
 import { RecentItems } from "@/components/dashboard/recent-items";
+import {
+  getDashboardCollections,
+  getCollectionStats,
+} from "@/lib/db/collections";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [collections, collectionStats] = await Promise.all([
+    getDashboardCollections(),
+    getCollectionStats(),
+  ]);
+
   return (
     <div className="max-w-7xl mx-auto space-y-7 sm:space-y-8 pb-10">
       {/* Dashboard Page Header */}
@@ -17,10 +26,10 @@ export default function DashboardPage() {
       </div>
 
       {/* 4 Stats Cards at the top */}
-      <StatsCards />
+      <StatsCards collectionStats={collectionStats} />
 
       {/* Recent Collections Grid */}
-      <CollectionsGrid />
+      <CollectionsGrid collections={collections} />
 
       {/* Pinned Items */}
       <PinnedItems />

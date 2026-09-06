@@ -1,11 +1,23 @@
 import { Layers, Folder, Star, Bookmark } from "lucide-react";
-import { items, collections } from "@/lib/mock-data";
+import { items } from "@/lib/mock-data";
+import {
+  getCollectionStats,
+  type CollectionStats,
+} from "@/lib/db/collections";
 
-export function StatsCards() {
+interface StatsCardsProps {
+  collectionStats?: CollectionStats;
+}
+
+export async function StatsCards({
+  collectionStats: propStats,
+}: StatsCardsProps = {}) {
+  const collectionStats = propStats ?? (await getCollectionStats());
+
   const totalItems = items.length;
-  const totalCollections = collections.length;
+  const totalCollections = collectionStats.totalCollections;
   const favoriteItems = items.filter((item) => item.isFavorite).length;
-  const favoriteCollections = collections.filter((col) => col.isFavorite).length;
+  const favoriteCollections = collectionStats.favoriteCollections;
 
   const stats = [
     {
