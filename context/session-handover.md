@@ -6,8 +6,8 @@
 
 ## 1. Project Snapshot (Current State)
 
-- **Git Branch:** `main` (ahead of `origin/main` by 3 commits)
-- **Last Commit:** `957fbd4` (`feat: connect dashboard pinned and recent items to live database`)
+- **Git Branch:** `main`
+- **Last Commit:** `5cd3892` (`feat: connect stats and sidebar to database with refined collection layout`)
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data.
 
@@ -15,8 +15,11 @@
 
 ## 2. What We Have Built So Far
 
-### A. Frontend UI (Dashboard)
+### A. Frontend UI (Dashboard & Sidebar)
 - **App Shell:** Dark mode UI, responsive collapsible Sidebar (`src/components/layout/sidebar.tsx`), dynamic mobile Sheet drawer, and top bar with search (`src/components/layout/top-bar.tsx`).
+- **Sidebar & Stats:** 100% live database-driven!
+  - System item types with live item count badges, colored icons, and links to `/items/[type]`.
+  - Collections section with folder icon, favorite collections with left star icons and live item counts, recent collections with type-based color dots and live item counts, and "View all collections" link (`/collections`).
 - **Dashboard (`/dashboard`):** 100% live database-driven!
   - 4 live metric cards (Total Items, Collections, Favorites).
   - `CollectionsGrid` with live dynamic left border accents and item type icons (`src/lib/db/collections.ts`).
