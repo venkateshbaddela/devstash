@@ -24,6 +24,7 @@ Read te following to get the full context of te project:
 ~ @context/coding-standards.md
 ~ @context/ai-interaction.md
 ~ @context/current-feature.md
+~ @context/session-handover.md
 
 ## 3. Tech Stack
 
