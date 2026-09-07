@@ -7,7 +7,7 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `5cd3892` (`feat: connect stats and sidebar to database with refined collection layout`)
+- **Last Commit:** `fd33436` (`docs: complete add pro badge to sidebar and update history`)
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data.
 
@@ -19,6 +19,7 @@
 - **App Shell:** Dark mode UI, responsive collapsible Sidebar (`src/components/layout/sidebar.tsx`), dynamic mobile Sheet drawer, and top bar with search (`src/components/layout/top-bar.tsx`).
 - **Sidebar & Stats:** 100% live database-driven!
   - System item types with live item count badges, colored icons, and links to `/items/[type]`.
+  - Pro indicators: Subtle shadcn/ui "PRO" badges on "Files" and "Images" item types.
   - Collections section with folder icon, favorite collections with left star icons and live item counts, recent collections with type-based color dots and live item counts, and "View all collections" link (`/collections`).
 - **Dashboard (`/dashboard`):** 100% live database-driven!
   - 4 live metric cards (Total Items, Collections, Favorites).
