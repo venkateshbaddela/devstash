@@ -38,6 +38,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -72,6 +73,7 @@ export interface SidebarNavType {
   color: string;
   count: number;
   href?: string;
+  isPro?: boolean;
 }
 
 export interface SidebarNavCollection {
@@ -228,6 +230,12 @@ function SidebarContent({
                     pathname === `/items/${type.name}s` ||
                     pathname === `/items/${type.id}`;
 
+                  const isPro =
+                    type.isPro ??
+                    ["file", "files", "image", "images"].includes(
+                      type.name.toLowerCase()
+                    );
+
                   return (
                     <Link
                       key={type.id || type.name}
@@ -245,7 +253,22 @@ function SidebarContent({
                           className="size-4 shrink-0 transition-transform duration-150 group-hover:scale-110"
                           style={{ color: type.color }}
                         />
-                        <span className="truncate">{displayName}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="truncate">{displayName}</span>
+                          {isPro && (
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                "h-4.5 px-1.5 text-[9px] font-semibold uppercase tracking-normal leading-none rounded-lg border transition-colors shrink-0",
+                                isActive
+                                  ? "bg-foreground/10 text-foreground border-foreground/20"
+                                  : "bg-muted/60 text-muted-foreground border-border/80 group-hover:text-foreground group-hover:border-border"
+                              )}
+                            >
+                              PRO
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <span className="text-xs text-muted-foreground tabular-nums shrink-0 font-normal">
                         {type.count}

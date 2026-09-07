@@ -13,8 +13,8 @@ export const itemTypes = [
   { id: 'prompts', name: 'Prompts', count: 18, icon: 'Sparkles', color: '#8b5cf6' },
   { id: 'commands', name: 'Commands', count: 15, icon: 'Terminal', color: '#f97316' },
   { id: 'notes', name: 'Notes', count: 12, icon: 'StickyNote', color: '#fde047' },
-  { id: 'files', name: 'Files', count: 5, icon: 'File', color: '#6b7280' },
-  { id: 'images', name: 'Images', count: 3, icon: 'Image', color: '#ec4899' },
+  { id: 'files', name: 'Files', count: 5, icon: 'File', color: '#6b7280', isPro: true },
+  { id: 'images', name: 'Images', count: 3, icon: 'Image', color: '#ec4899', isPro: true },
   { id: 'links', name: 'Links', count: 8, icon: 'Link', color: '#10b981' },
 ]
 

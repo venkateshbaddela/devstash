@@ -186,6 +186,7 @@ export interface SidebarItemType {
   color: string;
   count: number;
   href: string;
+  isPro?: boolean;
 }
 
 const SYSTEM_ORDER: Record<string, number> = {
@@ -244,6 +245,7 @@ export async function getSidebarItemTypes(
       const displayName =
         DISPLAY_NAMES[lower] ||
         type.name.charAt(0).toUpperCase() + type.name.slice(1);
+      const isPro = lower === "file" || lower === "image";
 
       return {
         id: type.id,
@@ -253,6 +255,7 @@ export async function getSidebarItemTypes(
         color: type.color,
         count: countMap.get(type.id) ?? 0,
         href: `/items/${type.name}`,
+        isPro,
       };
     });
 }
