@@ -1,4 +1,4 @@
-# Current Feature: Add Pro Badge to Sidebar
+# Current Feature: Fix Codebase Bugs and Performance Issues
 
 ---
 
@@ -10,19 +10,31 @@ Complete
 
 ## Goals
 
-- [x] Add a "PRO" badge to the "Files" and "Images" item types in the sidebar navigation
-- [x] Use the Shadcn UI `Badge` component for rendering the pro indicator
-- [x] Ensure badge is clean, subtle, aesthetic, native to the current UI, and styled with "PRO" in all uppercase
-- [x] Ensure correct placement alongside item type names and counts in both desktop and mobile drawer sidebars
+### Step 1 — Database & Request Performance
+- [x] Memoize `getDefaultUserId()` with React `cache()` in `src/lib/db/collections.ts` to eliminate duplicate database queries per request (Bug 2)
+- [x] Add dedicated lightweight `getSidebarCollections()` query in `src/lib/db/collections.ts` and replace heavy collection query in sidebar (Bug 3)
+- [x] Bound pinned and recent item queries with finite limit (`take: 12`) and selective column projections in `src/lib/db/items.ts` (Bug 5)
+- [x] Add correct user scoping to system item type query `getSidebarItemTypes()` in `src/lib/db/items.ts` (Bug 6)
+
+### Step 2 — Navigation & Routing Correctness
+- [x] Fix broken active collection highlighting in `src/components/layout/sidebar.tsx` using `useSearchParams()` (Bug 1)
+- [x] Fix broken `/collections` navigation link in `src/components/layout/sidebar.tsx` (Bug 4)
+
+### Step 3 — Application Architecture & State
+- [x] Prevent layout remounting between `/dashboard` and `/items/[type]` routes via shared `(app)` route-group layout (Bug 7)
+- [x] Refactor monolithic sidebar and centralize shared expansion state in `src/context/sidebar-context.tsx` (Bug 8)
 
 ---
 
 ## Notes
 
-- Spec file: `context/features/add-pro-badge-sidebar.md`
-- Target component: `src/components/layout/sidebar.tsx`
-- Badge component: `src/components/ui/badge.tsx`
-- Targets item types: `file` / `Files` and `image` / `Images`
+- Source specification: `context/bugs.md`
+- Guidelines from `context/bugs.md`:
+  1. Fix only bugs that cause severe problems to the codebase; avoid over-engineering.
+  2. Inform user before fixing any bug if there is risk of breaking changes.
+  3. Solve one bug at a time and explain the fix and verification steps.
+  4. Run `npm run build` and `npm run lint` after each fix to ensure stability.
+- Initial priority: `collections.ts:getDefaultUserId()` React `cache()` memoization to eliminate repeated user lookups per request.
 
 ---
 
@@ -100,3 +112,15 @@ Complete
 - Integrated shadcn/ui `Badge` component with custom refined styling (`rounded-lg`, `h-4.5 px-1.5 text-[9px] font-semibold uppercase tracking-normal leading-none`).
 - Added `isPro?: boolean` to `SidebarItemType` interface in `src/lib/db/items.ts` and configured `isPro: true` in `src/lib/mock-data.ts`.
 - Verified layout and responsiveness across desktop and mobile drawer sidebars.
+
+### Fix Codebase Bugs & Performance Issues (2026-09-07)
+
+- Wrapped `getDefaultUserId()` with React `cache()` in `src/lib/db/collections.ts` to eliminate duplicate database queries per request (Bug 2).
+- Added dedicated lightweight `getSidebarCollections()` query in `src/lib/db/collections.ts` fetching only required fields and item counts (Bug 3).
+- Bounded pinned and recent item queries (`take: 12`) and added selective column projection in `src/lib/db/items.ts` to prevent fetching heavy content and file metadata (Bug 5).
+- Scoped system item types to active user and global types (`userId: null`), updated `prisma/seed.ts` to seed system types with `userId: null`, and migrated existing database rows to be globally available (Bug 6).
+- Fixed active collection highlighting in `src/components/layout/sidebar.tsx` using `useSearchParams()` (Bug 1).
+- Removed redundant and broken "View all collections" 404 link from sidebar navigation (Bug 4).
+- Prevented layout remounting and state loss between `/dashboard` and `/items/[type]` routes via shared `src/app/(app)/layout.tsx` route group (Bug 7).
+- Centralized `isTypesOpen` and `isCollectionsOpen` section expansion state in `src/components/layout/sidebar-context.tsx` to synchronize desktop and mobile drawers (Bug 8).
+- Verified build and lint (`npm run build`, `npm run lint`).

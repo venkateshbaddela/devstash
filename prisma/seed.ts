@@ -439,7 +439,7 @@ async function main() {
         icon: itemType.icon,
         color: itemType.color,
         isSystem: true,
-        userId: demoUser.id,
+        userId: null,
       },
     });
     typeMap.set(itemType.name, createdType.id);

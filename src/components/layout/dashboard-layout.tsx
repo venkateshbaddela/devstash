@@ -3,12 +3,12 @@ import { SidebarProvider } from "@/components/layout/sidebar-context";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { getSidebarItemTypes } from "@/lib/db/items";
-import { getCollections } from "@/lib/db/collections";
+import { getSidebarCollections } from "@/lib/db/collections";
 
 export async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [itemTypes, collections] = await Promise.all([
     getSidebarItemTypes(),
-    getCollections(),
+    getSidebarCollections(),
   ]);
 
   return (

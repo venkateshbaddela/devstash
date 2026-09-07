@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
 export const DEMO_USER_EMAIL = "demo@devstash.io";
@@ -26,17 +27,26 @@ export interface CollectionStats {
   favoriteCollections: number;
 }
 
+export interface SidebarCollection {
+  id: string;
+  name: string;
+  isFavorite: boolean;
+  color: string | null;
+  itemCount: number;
+}
+
 /**
  * Resolves the default user ID (demo user for development/demo mode).
+ * Memoized per server request using React cache().
  */
-export async function getDefaultUserId(): Promise<string | null> {
+export const getDefaultUserId = cache(async (): Promise<string | null> => {
   const user = await prisma.user.findUnique({
     where: { email: DEMO_USER_EMAIL },
     select: { id: true },
   });
 
   return user?.id ?? null;
-}
+});
 
 /**
  * Fetches collections for the dashboard view.
@@ -137,6 +147,48 @@ export async function getCollections(
   userId?: string
 ): Promise<DashboardCollection[]> {
   return getDashboardCollections(userId, undefined);
+}
+
+/**
+ * Fetches lightweight collection records specifically for the sidebar navigation.
+ * Selects only necessary fields and item counts without loading full item rows or types.
+ */
+export async function getSidebarCollections(
+  userId?: string
+): Promise<SidebarCollection[]> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+
+  if (!targetUserId) {
+    return [];
+  }
+
+  const collections = await prisma.collection.findMany({
+    where: {
+      userId: targetUserId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      id: true,
+      name: true,
+      isFavorite: true,
+      color: true,
+      _count: {
+        select: {
+          items: true,
+        },
+      },
+    },
+  });
+
+  return collections.map((col) => ({
+    id: col.id,
+    name: col.name,
+    isFavorite: col.isFavorite,
+    color: col.color,
+    itemCount: col._count.items,
+  }));
 }
 
 /**

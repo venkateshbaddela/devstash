@@ -1,6 +1,7 @@
+import * as React from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 
-export default function ItemsLayout({
+export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;

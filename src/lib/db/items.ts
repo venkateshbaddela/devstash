@@ -28,10 +28,10 @@ interface PrismaItemWithRelations {
   id: string;
   title: string;
   description: string | null;
-  content: string | null;
+  content?: string | null;
   contentType: string;
-  url: string | null;
-  language: string | null;
+  url?: string | null;
+  language?: string | null;
   isFavorite: boolean;
   isPinned: boolean;
   createdAt: Date;
@@ -47,6 +47,32 @@ interface PrismaItemWithRelations {
   }>;
 }
 
+const DASHBOARD_ITEM_SELECT = {
+  id: true,
+  title: true,
+  description: true,
+  contentType: true,
+  isFavorite: true,
+  isPinned: true,
+  createdAt: true,
+  itemType: {
+    select: {
+      name: true,
+      icon: true,
+      color: true,
+    },
+  },
+  tags: {
+    include: {
+      tag: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  },
+} as const;
+
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -59,10 +85,10 @@ function mapToDashboardItem(item: PrismaItemWithRelations): DashboardItem {
     id: item.id,
     title: item.title,
     description: item.description,
-    content: item.content,
+    content: item.content ?? null,
     contentType: item.contentType,
-    url: item.url,
-    language: item.language,
+    url: item.url ?? null,
+    language: item.language ?? null,
     isFavorite: item.isFavorite,
     isPinned: item.isPinned,
     type: item.itemType.name,
@@ -76,9 +102,11 @@ function mapToDashboardItem(item: PrismaItemWithRelations): DashboardItem {
 
 /**
  * Fetches pinned items for the demo user or specified user.
+ * Bounded with a take limit and explicit field selection to avoid loading large payloads.
  */
 export async function getPinnedItems(
-  userId?: string
+  userId?: string,
+  limit = 12
 ): Promise<DashboardItem[]> {
   const targetUserId = userId ?? (await getDefaultUserId());
   if (!targetUserId) return [];
@@ -89,24 +117,8 @@ export async function getPinnedItems(
       isPinned: true,
     },
     orderBy: { createdAt: "desc" },
-    include: {
-      itemType: {
-        select: {
-          name: true,
-          icon: true,
-          color: true,
-        },
-      },
-      tags: {
-        include: {
-          tag: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-    },
+    take: limit,
+    select: DASHBOARD_ITEM_SELECT,
   });
 
   return items.map(mapToDashboardItem);
@@ -114,10 +126,11 @@ export async function getPinnedItems(
 
 /**
  * Fetches recent items for the demo user or specified user.
+ * Bounded with a take limit and explicit field selection to avoid loading large payloads.
  */
 export async function getRecentItems(
   userId?: string,
-  limit = 10
+  limit = 12
 ): Promise<DashboardItem[]> {
   const targetUserId = userId ?? (await getDefaultUserId());
   if (!targetUserId) return [];
@@ -128,24 +141,7 @@ export async function getRecentItems(
     },
     orderBy: { createdAt: "desc" },
     take: limit,
-    include: {
-      itemType: {
-        select: {
-          name: true,
-          icon: true,
-          color: true,
-        },
-      },
-      tags: {
-        include: {
-          tag: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-    },
+    select: DASHBOARD_ITEM_SELECT,
   });
 
   return items.map(mapToDashboardItem);
@@ -220,7 +216,13 @@ export async function getSidebarItemTypes(
 
   const [types, counts] = await Promise.all([
     prisma.itemType.findMany({
-      where: { isSystem: true },
+      where: {
+        isSystem: true,
+        OR: [
+          { userId: targetUserId },
+          { userId: null },
+        ],
+      },
     }),
     prisma.item.groupBy({
       by: ["itemTypeId"],

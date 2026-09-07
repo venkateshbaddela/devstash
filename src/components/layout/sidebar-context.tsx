@@ -10,6 +10,12 @@ interface SidebarContextType {
   closeMobile: () => void;
   setIsMobileOpen: (open: boolean) => void;
   toggle: () => void;
+  isTypesOpen: boolean;
+  setIsTypesOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  toggleTypes: () => void;
+  isCollectionsOpen: boolean;
+  setIsCollectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  toggleCollections: () => void;
 }
 
 const SidebarContext = React.createContext<SidebarContextType | undefined>(
@@ -19,6 +25,8 @@ const SidebarContext = React.createContext<SidebarContextType | undefined>(
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
+  const [isTypesOpen, setIsTypesOpen] = React.useState(true);
+  const [isCollectionsOpen, setIsCollectionsOpen] = React.useState(true);
 
   const toggleSidebar = React.useCallback(() => {
     setIsCollapsed((prev) => !prev);
@@ -30,6 +38,14 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
   const closeMobile = React.useCallback(() => {
     setIsMobileOpen(false);
+  }, []);
+
+  const toggleTypes = React.useCallback(() => {
+    setIsTypesOpen((prev) => !prev);
+  }, []);
+
+  const toggleCollections = React.useCallback(() => {
+    setIsCollectionsOpen((prev) => !prev);
   }, []);
 
   const toggle = React.useCallback(() => {
@@ -50,6 +66,12 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
         closeMobile,
         setIsMobileOpen,
         toggle,
+        isTypesOpen,
+        setIsTypesOpen,
+        toggleTypes,
+        isCollectionsOpen,
+        setIsCollectionsOpen,
+        toggleCollections,
       }}
     >
       {children}
