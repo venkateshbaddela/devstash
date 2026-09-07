@@ -1,15 +1,19 @@
 # Current Feature: Add Pro Badge to Sidebar
 
+---
+
 ## Status
 
-In Progress
+Complete
+
+---
 
 ## Goals
 
-- Add a "PRO" badge to the "Files" and "Images" item types in the sidebar navigation
-- Use the Shadcn UI `Badge` component for rendering the pro indicator
-- Ensure badge is clean, subtle, aesthetic, native to the current UI, and styled with "PRO" in all uppercase
-- Ensure correct placement alongside item type names and counts in both desktop and mobile drawer sidebars
+- [x] Add a "PRO" badge to the "Files" and "Images" item types in the sidebar navigation
+- [x] Use the Shadcn UI `Badge` component for rendering the pro indicator
+- [x] Ensure badge is clean, subtle, aesthetic, native to the current UI, and styled with "PRO" in all uppercase
+- [x] Ensure correct placement alongside item type names and counts in both desktop and mobile drawer sidebars
 
 ---
 
@@ -23,6 +27,13 @@ In Progress
 ---
 
 ## History
+
+### Add Pro Badge to Sidebar (2026-09-07)
+
+- Added PRO badge to "Files" and "Images" item types in sidebar navigation (`src/components/layout/sidebar.tsx`).
+- Integrated shadcn/ui `Badge` component with custom refined styling (`rounded-lg`, `h-4.5 px-1.5 text-[9px] font-semibold uppercase tracking-normal leading-none`).
+- Added `isPro?: boolean` to `SidebarItemType` interface in `src/lib/db/items.ts` and configured `isPro: true` in `src/lib/mock-data.ts`.
+- Verified layout and responsiveness across desktop and mobile drawer sidebars.
 
 ### Stats & Sidebar Database Integration (2026-09-06)
 
