@@ -7,24 +7,25 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `fd33436` (`docs: complete add pro badge to sidebar and update history`)
+- **Last Commit:** `3aa592a` (`fix: resolve performance, routing, and architectural codebase issues`)
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
-- **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data.
+- **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including global system item types).
 
 ---
 
 ## 2. What We Have Built So Far
 
-### A. Frontend UI (Dashboard & Sidebar)
-- **App Shell:** Dark mode UI, responsive collapsible Sidebar (`src/components/layout/sidebar.tsx`), dynamic mobile Sheet drawer, and top bar with search (`src/components/layout/top-bar.tsx`).
-- **Sidebar & Stats:** 100% live database-driven!
-  - System item types with live item count badges, colored icons, and links to `/items/[type]`.
-  - Pro indicators: Subtle shadcn/ui "PRO" badges on "Files" and "Images" item types.
-  - Collections section with folder icon, favorite collections with left star icons and live item counts, recent collections with type-based color dots and live item counts, and "View all collections" link (`/collections`).
+### A. Frontend UI (Dashboard & Modular Sidebar)
+- **App Shell:** Dark mode UI, persistent shared `(app)` route-group layout (`src/app/(app)/layout.tsx`) preventing shell unmounting during `/dashboard` ↔ `/items/[type]` navigation.
+- **Modular Sidebar:** Refactored into clean domain sub-components with shared expansion state in `SidebarContext`:
+  - `src/components/layout/sidebar-nav-types.tsx` (System types, live count badges, PRO indicators).
+  - `src/components/layout/sidebar-nav-collections.tsx` (Favorites with star icons, recent collections with color dots, active-state detection via `useSearchParams()`).
+  - `src/components/layout/sidebar-user-profile.tsx` (User initials avatar and settings).
+  - `src/components/layout/sidebar.tsx` (Assembles desktop `<aside>` and mobile drawer `<Sheet>`).
 - **Dashboard (`/dashboard`):** 100% live database-driven!
   - 4 live metric cards (Total Items, Collections, Favorites).
   - `CollectionsGrid` with live dynamic left border accents and item type icons (`src/lib/db/collections.ts`).
-  - `PinnedItems` and `RecentItems` sections with live item data, tags, and type indicators (`src/lib/db/items.ts`).
+  - `PinnedItems` and `RecentItems` sections with live bounded items (`take: 12`), selective column projections, tags, and type indicators (`src/lib/db/items.ts`).
 - **Dynamic Route (`/items/[type]`):** Filtered item list view with breadcrumb navigation.
 
 ### B. Database & Backend Architecture (Prisma 7 + Neon)
