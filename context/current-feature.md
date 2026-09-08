@@ -1,40 +1,37 @@
-# Current Feature: Fix Codebase Bugs and Performance Issues
+# Current Feature: Auth Setup - NextAuth + GitHub Provider
 
 ---
 
 ## Status
 
-Complete
+In Progress
 
 ---
 
 ## Goals
 
-### Step 1 — Database & Request Performance
-- [x] Memoize `getDefaultUserId()` with React `cache()` in `src/lib/db/collections.ts` to eliminate duplicate database queries per request (Bug 2)
-- [x] Add dedicated lightweight `getSidebarCollections()` query in `src/lib/db/collections.ts` and replace heavy collection query in sidebar (Bug 3)
-- [x] Bound pinned and recent item queries with finite limit (`take: 12`) and selective column projections in `src/lib/db/items.ts` (Bug 5)
-- [x] Add correct user scoping to system item type query `getSidebarItemTypes()` in `src/lib/db/items.ts` (Bug 6)
-
-### Step 2 — Navigation & Routing Correctness
-- [x] Fix broken active collection highlighting in `src/components/layout/sidebar.tsx` using `useSearchParams()` (Bug 1)
-- [x] Fix broken `/collections` navigation link in `src/components/layout/sidebar.tsx` (Bug 4)
-
-### Step 3 — Application Architecture & State
-- [x] Prevent layout remounting between `/dashboard` and `/items/[type]` routes via shared `(app)` route-group layout (Bug 7)
-- [x] Refactor monolithic sidebar and centralize shared expansion state in `src/context/sidebar-context.tsx` (Bug 8)
+- [x] Install NextAuth v5 (`next-auth@beta`) and `@auth/prisma-adapter`
+- [x] Create edge-compatible auth configuration in `src/auth.config.ts` (providers only, GitHub OAuth)
+- [x] Create full auth configuration with Prisma adapter and JWT session strategy in `src/auth.ts`
+- [x] Create NextAuth route handlers in `src/app/api/auth/[...nextauth]/route.ts`
+- [x] Protect `/dashboard/*` routes using Next.js 16 proxy in `src/proxy.ts` with redirect logic
+- [x] Extend NextAuth session types in `src/types/next-auth.d.ts` with `user.id`
+- [x] Configure environment variables (`AUTH_SECRET`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`)
+- [x] Verify build, linting, and authentication flow (route protection redirect, sign-in, and redirect back to `/dashboard`)
 
 ---
 
 ## Notes
 
-- Source specification: `context/bugs.md`
-- Guidelines from `context/bugs.md`:
-  1. Fix only bugs that cause severe problems to the codebase; avoid over-engineering.
-  2. Inform user before fixing any bug if there is risk of breaking changes.
-  3. Solve one bug at a time and explain the fix and verification steps.
-  4. Run `npm run build` and `npm run lint` after each fix to ensure stability.
-- Initial priority: `collections.ts:getDefaultUserId()` React `cache()` memoization to eliminate repeated user lookups per request.
+- Source specification: `context/features/auth-phase-1-spec.md`
+- NextAuth version: Use `next-auth@beta` (NextAuth v5), not `@latest` (which installs v4).
+- Edge compatibility: Split auth config pattern (`src/auth.config.ts` for edge/proxy, `src/auth.ts` with Prisma adapter for Node.js).
+- Proxy file: Must be at `src/proxy.ts` (same level as `app/`) using named export `export const proxy = auth(...)` (not default export).
+- Session strategy: Use `session: { strategy: 'jwt' }` with split config pattern.
+- Pages: Do not set custom `pages.signIn` — use NextAuth's default page for testing.
+- References:
+  - Edge compatibility: https://authjs.dev/getting-started/installation#edge-compatibility
+  - Prisma adapter: https://authjs.dev/getting-started/adapters/prisma
 
 ---
 

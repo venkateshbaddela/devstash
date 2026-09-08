@@ -56,3 +56,16 @@ npm run lint
 ```
 
 ---
+
+## 5. Database & Neon MCP Rules
+
+> [!CAUTION]
+> **Database Branch Safety**
+> Whenever interacting with the database via **Neon MCP**, you must strictly follow these rules:
+>
+> 1. **Project Scope:** Always operate exclusively on the **`devstash`** project.
+> 2. **Default Branch:** Always use the **`development`** database branch for all operations (running SQL queries, reading schemas, executing migrations, seeding, etc.).
+> 3. **Production Safeguard:** **NEVER** query, modify, migrate, or alter the **`production`** (or `main`) branch unless the user explicitly instructs you to do so in their message.
+> 4. **Pre-execution Verification:**
+>    - Verify that the target branch is `development` before issuing any Neon MCP tool calls.
+>    - If the `development` branch cannot be found or the tool defaults to `production`, **STOP and ask the user for confirmation** before proceeding.
