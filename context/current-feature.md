@@ -1,37 +1,22 @@
-# Current Feature: Auth Setup - NextAuth + GitHub Provider
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- [x] Install NextAuth v5 (`next-auth@beta`) and `@auth/prisma-adapter`
-- [x] Create edge-compatible auth configuration in `src/auth.config.ts` (providers only, GitHub OAuth)
-- [x] Create full auth configuration with Prisma adapter and JWT session strategy in `src/auth.ts`
-- [x] Create NextAuth route handlers in `src/app/api/auth/[...nextauth]/route.ts`
-- [x] Protect `/dashboard/*` routes using Next.js 16 proxy in `src/proxy.ts` with redirect logic
-- [x] Extend NextAuth session types in `src/types/next-auth.d.ts` with `user.id`
-- [x] Configure environment variables (`AUTH_SECRET`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`)
-- [x] Verify build, linting, and authentication flow (route protection redirect, sign-in, and redirect back to `/dashboard`)
+<!-- What needs to be done. Check off as completed. -->
 
 ---
 
 ## Notes
 
-- Source specification: `context/features/auth-phase-1-spec.md`
-- NextAuth version: Use `next-auth@beta` (NextAuth v5), not `@latest` (which installs v4).
-- Edge compatibility: Split auth config pattern (`src/auth.config.ts` for edge/proxy, `src/auth.ts` with Prisma adapter for Node.js).
-- Proxy file: Must be at `src/proxy.ts` (same level as `app/`) using named export `export const proxy = auth(...)` (not default export).
-- Session strategy: Use `session: { strategy: 'jwt' }` with split config pattern.
-- Pages: Do not set custom `pages.signIn` — use NextAuth's default page for testing.
-- References:
-  - Edge compatibility: https://authjs.dev/getting-started/installation#edge-compatibility
-  - Prisma adapter: https://authjs.dev/getting-started/adapters/prisma
+<!-- Context, constraints, decisions made during implementation. -->
 
 ---
 
@@ -121,3 +106,14 @@ In Progress
 - Prevented layout remounting and state loss between `/dashboard` and `/items/[type]` routes via shared `src/app/(app)/layout.tsx` route group (Bug 7).
 - Centralized `isTypesOpen` and `isCollectionsOpen` section expansion state in `src/components/layout/sidebar-context.tsx` to synchronize desktop and mobile drawers (Bug 8).
 - Verified build and lint (`npm run build`, `npm run lint`).
+
+### Auth Setup - NextAuth + GitHub Provider (2026-09-08)
+
+- Installed NextAuth v5 (`next-auth@beta`) and `@auth/prisma-adapter`.
+- Created edge-compatible auth configuration in `src/auth.config.ts` with GitHub OAuth provider and pure edge-safe `jwt` and `session` callbacks.
+- Created full auth configuration in `src/auth.ts` integrating Prisma adapter and JWT session strategy.
+- Created route handlers in `src/app/api/auth/[...nextauth]/route.ts` re-exporting NextAuth `GET` and `POST` handlers.
+- Implemented route protection using Next.js 16 proxy convention in `src/proxy.ts` protecting `/dashboard/*` and `/items/*` with seamless `NextResponse.redirect` to sign-in.
+- Extended NextAuth types in `src/types/next-auth.d.ts` augmenting `Session` with `user.id` and `JWT` with `id`.
+- Normalized database SSL connections to `sslmode=verify-full` in `src/lib/prisma.ts` and `.env` to eliminate pg driver deprecation warnings.
+- Verified build and lint (`npm run build`, `npm run lint`) and confirmed OAuth redirect flows.

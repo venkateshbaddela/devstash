@@ -45,6 +45,14 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 - **18 Items:** Real developer snippets, prompts, bash commands, and resource links with tags and join tables.
 - **Verification Script:** Run `npm run test:db` (`scripts/test-db.ts`) to view all records and live stats.
 
+### D. Authentication Infrastructure (NextAuth v5 & GitHub OAuth)
+- **NextAuth v5 (`next-auth@beta`):** Configured with Prisma adapter (`@auth/prisma-adapter`) and JWT session strategy (`session: { strategy: 'jwt' }`).
+- **Edge Split Pattern:** `src/auth.config.ts` houses edge-safe providers (GitHub OAuth) and pure `jwt` / `session` callbacks mapping `user.id`, while `src/auth.ts` integrates the Prisma adapter.
+- **Route Protection (Next.js 16 Proxy):** `src/proxy.ts` exports named `export const proxy = auth(...)` with `NextResponse.redirect` protecting `/dashboard/*` and `/items/*` routes.
+- **Route Handlers:** `src/app/api/auth/[...nextauth]/route.ts` exposes NextAuth's `GET` and `POST` handlers.
+- **Type Augmentations:** `src/types/next-auth.d.ts` extends `Session` with `user.id: string` and `JWT` with `id?: string`.
+- **Database Driver Security:** Normalized connection strings in `src/lib/prisma.ts` and `.env` to `sslmode=verify-full` to eliminate `pg` driver deprecation warnings.
+
 ---
 
 ## 3. Handy Commands
