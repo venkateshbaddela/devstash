@@ -7,7 +7,7 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `4d0b1e9` (`chore: reset current-feature.md after completing auth-credentials`)
+- **Last Commit:** `2689dcb` (`chore: reset current-feature.md after completing auth-ui`)
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including global system item types).
 
@@ -20,7 +20,7 @@
 - **Modular Sidebar:** Refactored into clean domain sub-components with shared expansion state in `SidebarContext`:
   - `src/components/layout/sidebar-nav-types.tsx` (System types, live count badges, PRO indicators).
   - `src/components/layout/sidebar-nav-collections.tsx` (Favorites with star icons, recent collections with color dots, active-state detection via `useSearchParams()`).
-  - `src/components/layout/sidebar-user-profile.tsx` (User initials avatar and settings).
+  - `src/components/layout/sidebar-user-profile.tsx` (User avatar, dropdown menu, profile link, and sign out).
   - `src/components/layout/sidebar.tsx` (Assembles desktop `<aside>` and mobile drawer `<Sheet>`).
 - **Dashboard (`/dashboard`):** 100% live database-driven!
   - 4 live metric cards (Total Items, Collections, Favorites).
@@ -49,11 +49,20 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 - **NextAuth v5 (`next-auth@beta`):** Configured with Prisma adapter (`@auth/prisma-adapter`) and JWT session strategy (`session: { strategy: 'jwt' }`).
 - **Edge Split Pattern:** `src/auth.config.ts` houses edge-safe providers (GitHub OAuth and Credentials placeholder) and pure `jwt` / `session` callbacks, while `src/auth.ts` overrides Credentials with `bcryptjs` password comparison and Prisma database queries.
 - **Registration Route:** `src/app/api/auth/register/route.ts` validates registration data, hashes passwords with bcrypt (12 rounds), and persists new users.
-- **Route Protection (Next.js 16 Proxy):** `src/proxy.ts` exports named `export const proxy = auth(...)` with `NextResponse.redirect` protecting `/dashboard/*` and `/items/*` routes.
-- **Route Handlers:** `src/app/api/auth/[...nextauth]/route.ts` exposes NextAuth's `GET` and `POST` handlers.
+- **Route Protection (Next.js 16 Proxy):** `src/proxy.ts` exports named `export const proxy = auth(...)` with `NextResponse.redirect` protecting `/dashboard/*`, `/items/*`, and `/profile/*` routes.
+- **Route Handlers:** `src/app/api/auth/[...nextauth]/route.ts` cleanly exposes NextAuth's `GET` and `POST` handlers.
 - **Type Augmentations:** `src/types/next-auth.d.ts` extends `Session` with `user.id: string` and `JWT` with `id?: string`.
 - **Database Driver Security:** Normalized connection strings in `src/lib/prisma.ts` and `.env` to `sslmode=verify-full` to eliminate `pg` driver deprecation warnings.
 - **Automated Verification:** `npm run test:auth` (`scripts/test-auth-flow.ts`) tests providers, proxy redirects, registration validation, duplicate email rejection, and credentials sign-in.
+
+### E. Auth UI & User Session Integration (Phase 3)
+- **Custom Sign In (`/sign-in`):** Branded dark mode card with email/password validation, GitHub OAuth button, open redirect sanitization on `callbackUrl`, clear error messaging, and auto-redirect for authenticated visitors.
+- **Custom Register (`/register`):** Full name, email, password, confirm password fields with validation, submit handling to `/api/auth/register`, and redirect with success banner to `/sign-in`.
+- **Reusable UserAvatar (`src/components/ui/user-avatar.tsx`):** Displays GitHub user image or falls back to initials generated from name or email with responsive typography scaling.
+- **Sidebar Integration & Session Scoping:** `DashboardLayout` retrieves user session and scopes `getSidebarItemTypes(userId)` and `getSidebarCollections(userId)` to active user ID.
+- **Sidebar Dropdown Menu:** User profile trigger in sidebar footer opens dropdown menu with "Profile" link and native NextAuth `signOut()` handler.
+- **Account Profile Page (`/profile`):** Server-rendered profile screen displaying name, email, avatar, tier, authentication method, and session sign-out action.
+- **GitHub OAuth Test Script:** `scripts/test-github-oauth.ts` verifies OAuth initiation, PKCE challenges, CSRF tokens, and database account links.
 
 ---
 
@@ -81,7 +90,6 @@ npm run db:seed     # Run prisma db seed
    - Document in `context/current-feature.md`
    - Create branch `feature/<name>` or `fix/<name>`
    - Implement & verify (`npm run build`, `npm run lint`)
-   - Ask user before committing (use conventional commit message)
    - Merge to `main`, delete feature branch, push to `origin/main`
    - Mark completed in `context/current-feature.md` and update history.
 
@@ -89,7 +97,7 @@ npm run db:seed     # Run prisma db seed
 
 ## 5. Logical Next Step
  
-The authentication backend (GitHub OAuth, Credentials provider, and Registration API) is complete. The logical next tasks are:
-1. **Auth UI - Sign In, Register & Sign Out (`context/features/auth-phase-3-spec.md`):** Build custom branded `/sign-in` and `/register` pages and connect sidebar user profile & sign-out dropdown.
-2. **Connect Dynamic Route (`/items/[type]`):** Replace `mock-data.ts` in `/items/[type]` with live queries filtering items by system item type.
-3. **Item Quick-View Drawer:** Implement slide-over item details drawer with syntax highlighting, copy-to-clipboard, tags, and actions per `project-overview.md`.
+All 3 phases of Authentication (GitHub OAuth, Credentials Provider, and Auth UI) are complete. The logical next tasks are:
+1. **Connect Dynamic Route (`/items/[type]`):** Replace `mock-data.ts` in `/items/[type]` with live queries filtering items by system item type for the authenticated user.
+2. **Item Quick-View Drawer:** Implement slide-over item details drawer with syntax highlighting, copy-to-clipboard, tags, and actions per `project-overview.md`.
+3. **Item Creation & Management Flow:** Add quick modal or page to create, edit, pin, favorite, and delete items and assign them to collections.
