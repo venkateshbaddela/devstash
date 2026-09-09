@@ -1,22 +1,59 @@
-# Current Feature
+# Current Feature: Auth UI - Sign In, Register & Sign Out
 
 ---
 
 ## Status
 
-Not Started
+Complete
 
 ---
 
 ## Goals
 
-<!-- What needs to be done. Check off as completed. -->
+- [x] Configure custom auth pages in `src/auth.config.ts` (`pages: { signIn: "/sign-in" }`) and update proxy redirect in `src/proxy.ts`
+- [x] Build custom Sign In page at `src/app/sign-in/page.tsx`:
+  - [x] Responsive, polished dark mode card matching Devstash styling
+  - [x] Email and password input fields with validation and error alerts
+  - [x] "Sign in with GitHub" OAuth button
+  - [x] Link to `/register` page
+  - [x] Authenticate with NextAuth `signIn("credentials", ...)` and redirect to dashboard/callbackUrl
+- [x] Build custom Register page at `src/app/register/page.tsx`:
+  - [x] Name, email, password, and confirm password fields
+  - [x] Form validation (passwords match, email format, min password length)
+  - [x] Submit payload to `/api/auth/register` and handle error responses
+  - [x] Redirect to `/sign-in` with success message upon account creation
+  - [x] Link to `/sign-in` page
+- [x] Create reusable UserAvatar component (`src/components/ui/user-avatar.tsx`):
+  - [x] Display GitHub image avatar if present
+  - [x] Generate initials fallback from name (e.g. "Brad Traversy" → "BT") or email
+- [x] Update bottom of sidebar (`src/components/layout/sidebar.tsx`, `sidebar-user-profile.tsx`, `dashboard-layout.tsx`):
+  - [x] Integrate authenticated user session from `auth()` into `DashboardLayout`
+  - [x] Display user avatar (image or initials fallback) and user name/email
+  - [x] Dropdown/popover on click with "Profile" (link to `/profile`) and "Sign out" action
+- [x] Verify test cases:
+  - [x] Navigate to `/sign-in` - verify custom styled page renders
+  - [x] Sign in with GitHub - verify flow initiates
+  - [x] Sign in with email/password - verify authentication and redirect to `/dashboard`
+  - [x] Navigate to `/register` - create account and verify redirect to `/sign-in`
+  - [x] Verify sidebar displays authenticated user's avatar and name
+  - [x] Click avatar/profile to open dropdown and verify "Sign out" logs user out
+  - [x] Verify build and lint (`npm run build`, `npm run lint`) pass cleanly
 
 ---
 
 ## Notes
 
-<!-- Context, constraints, decisions made during implementation. -->
+- **Spec source:** `context/features/auth-phase-3-spec.md`
+- **Custom Pages Routing:**
+  - Set `pages: { signIn: "/sign-in" }` in `src/auth.config.ts`.
+  - Update `src/proxy.ts` to redirect unauthenticated visitors from protected routes (`/dashboard`, `/items`) to `/sign-in?callbackUrl=...`.
+- **Avatar Logic:**
+  - If user has `image` (e.g., from GitHub): render image.
+  - Otherwise: generate uppercase initials from name (e.g., "Brad Traversy" → "BT") or email.
+- **Sidebar Integration:**
+  - Fetch session on the server via `await auth()` in `src/components/layout/dashboard-layout.tsx`.
+  - Pass authenticated user data (`name`, `email`, `image`) to `Sidebar` and `SidebarUserProfile`.
+  - Add dropdown menu with "Profile" (`/profile`) and "Sign out" calling NextAuth `signOut()`.
 
 ---
 

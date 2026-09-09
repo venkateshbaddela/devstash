@@ -8,16 +8,18 @@ export const proxy = auth((req) => {
   const isLoggedIn = !!req.auth;
   const { pathname } = req.nextUrl;
   const isProtectedRoute =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/items");
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/items") ||
+    pathname.startsWith("/profile");
 
   if (isProtectedRoute && !isLoggedIn) {
     const callbackUrl = pathname + req.nextUrl.search;
-    const signInUrl = new URL("/api/auth/signin", req.nextUrl.origin);
+    const signInUrl = new URL("/sign-in", req.nextUrl);
     signInUrl.searchParams.set("callbackUrl", callbackUrl);
     return NextResponse.redirect(signInUrl);
   }
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/items/:path*"],
+  matcher: ["/dashboard/:path*", "/items/:path*", "/profile/:path*"],
 };

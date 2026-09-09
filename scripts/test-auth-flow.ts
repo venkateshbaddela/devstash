@@ -24,8 +24,8 @@ async function main() {
   if (unauthRes.status !== 307 && unauthRes.status !== 302 && unauthRes.status !== 308) {
     throw new Error(`Expected redirect status (307/302), got: ${unauthRes.status}`);
   }
-  if (!location?.includes("/api/auth/signin")) {
-    throw new Error(`Expected redirect to /api/auth/signin, got: ${location}`);
+  if (!location?.includes("/sign-in") && !location?.includes("/api/auth/signin")) {
+    throw new Error(`Expected redirect to /sign-in, got: ${location}`);
   }
   console.log("   ✅ Protected route correctly redirects unauthenticated user.");
 

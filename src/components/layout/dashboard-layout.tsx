@@ -4,12 +4,27 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { getSidebarItemTypes } from "@/lib/db/items";
 import { getSidebarCollections } from "@/lib/db/collections";
+import { auth } from "@/auth";
 
 export async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  const userId = session?.user?.id;
+
   const [itemTypes, collections] = await Promise.all([
-    getSidebarItemTypes(),
-    getSidebarCollections(),
+    getSidebarItemTypes(userId),
+    getSidebarCollections(userId),
   ]);
+
+  const user = session?.user
+    ? {
+        name: session.user.name || session.user.email?.split("@")[0] || "User",
+        email: session.user.email || "",
+        avatarUrl: session.user.image ?? undefined,
+      }
+    : {
+        name: "Demo User",
+        email: "demo@devstash.io",
+      };
 
   return (
     <SidebarProvider>
@@ -17,10 +32,7 @@ export async function DashboardLayout({ children }: { children: React.ReactNode 
         <Sidebar
           itemTypes={itemTypes}
           collections={collections}
-          user={{
-            name: "Demo User",
-            email: "demo@devstash.io",
-          }}
+          user={user}
         />
         <div className="flex flex-1 flex-col min-w-0">
           <TopBar />
