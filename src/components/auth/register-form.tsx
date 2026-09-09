@@ -2,13 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Layers, User, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResendVerificationForm } from "@/components/auth/resend-verification-form";
 
 export function RegisterForm() {
-  const router = useRouter();
 
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -19,6 +18,10 @@ export function RegisterForm() {
 
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [successData, setSuccessData] = React.useState<{
+    email: string;
+    emailSent: boolean;
+  } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -81,13 +84,69 @@ export function RegisterForm() {
         return;
       }
 
-      // Success: redirect to sign-in page with registered notification query
-      router.push("/sign-in?registered=true");
+      // Success: display verification instructions
+      setSuccessData({
+        email: trimmedEmail,
+        emailSent: data?.emailSent ?? true,
+      });
+      setIsLoading(false);
     } catch {
       setErrorMessage("An unexpected network error occurred. Please try again.");
       setIsLoading(false);
     }
   };
+
+  if (successData) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <div className="flex flex-col items-center text-center mb-8">
+          <Link
+            href="/"
+            className="group flex items-center gap-2.5 mb-3 transition-transform hover:scale-105"
+          >
+            <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-md shadow-purple-500/20 text-white">
+              <Layers className="size-5" />
+            </div>
+            <span className="font-bold text-2xl tracking-tight text-foreground">
+              DevStash
+            </span>
+          </Link>
+          <h1 className="text-xl font-semibold text-foreground tracking-tight">
+            Check your email
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            We sent a verification link to your email address
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-border/70 bg-card/60 p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/40 text-center space-y-4">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <Mail className="size-7" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            We&apos;ve sent a verification link to{" "}
+            <span className="font-medium text-foreground">{successData.email}</span>. Please click the link to activate your DevStash account.
+          </p>
+
+          <div className="pt-3 border-t border-border/40 text-left">
+            <p className="text-xs text-muted-foreground mb-3 text-center">
+              Didn&apos;t receive the email? Check your spam folder or request a new link:
+            </p>
+            <ResendVerificationForm initialEmail={successData.email} />
+          </div>
+
+          <div className="pt-2">
+            <Link
+              href="/sign-in"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Return to Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md mx-auto">

@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { Layers, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ResendVerificationForm } from "@/components/auth/resend-verification-form";
 
 function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -25,12 +26,15 @@ export function SignInForm() {
       ? rawCallbackUrl
       : "/dashboard";
   const registered = searchParams.get("registered") === "true";
+  const verified = searchParams.get("verified") === "true";
   const urlError = searchParams.get("error");
+  const errorCode = searchParams.get("code");
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
+  const [isUnverified, setIsUnverified] = React.useState(false);
   const [isLoadingCredentials, setIsLoadingCredentials] = React.useState(false);
   const [isLoadingGithub, setIsLoadingGithub] = React.useState(false);
 
@@ -40,12 +44,16 @@ export function SignInForm() {
       return "This GitHub account is already associated with another account, or you are already logged in as a different user. Please sign out first before connecting this GitHub account.";
     }
     if (urlError === "CredentialsSignin") {
+      if (errorCode === "email_not_verified") {
+        return "Your email address is not verified yet. Please check your email for the verification link.";
+      }
       return "Invalid email or password. Please try again.";
     }
     return "An authentication error occurred. Please try again.";
-  }, [urlError]);
+  }, [urlError, errorCode]);
 
   const displayError = formError || urlErrorMessage;
+  const showUnverifiedResend = isUnverified || errorCode === "email_not_verified";
 
   const handleCredentialsSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -69,6 +77,7 @@ export function SignInForm() {
     }
 
     setIsLoadingCredentials(true);
+    setIsUnverified(false);
     try {
       const res = await signIn("credentials", {
         email: trimmedEmail,
@@ -78,7 +87,17 @@ export function SignInForm() {
       });
 
       if (!res || res.error) {
-        setFormError("Invalid email or password. Please check your credentials.");
+        const isEmailNotVerified =
+          (res as { code?: string })?.code === "email_not_verified" ||
+          res?.error?.includes("email_not_verified");
+
+        if (isEmailNotVerified) {
+          setIsUnverified(true);
+          setFormError("Your email address is not verified yet. Please check your inbox for the verification link.");
+        } else {
+          setIsUnverified(false);
+          setFormError("Invalid email or password. Please check your credentials.");
+        }
         setIsLoadingCredentials(false);
         return;
       }
@@ -127,19 +146,37 @@ export function SignInForm() {
 
       {/* Main Card */}
       <div className="rounded-2xl border border-border/70 bg-card/60 p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/40">
-        {/* Success Alert (from register redirect) */}
-        {registered && !displayError && (
+        {/* Email Verified Alert */}
+        {verified && !displayError && (
           <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-400">
             <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
-            <span>Account created successfully! Please sign in with your email and password.</span>
+            <span>Email verified successfully! You can now sign in with your credentials.</span>
+          </div>
+        )}
+
+        {/* Success Alert (from register redirect) */}
+        {registered && !displayError && !verified && (
+          <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-400">
+            <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+            <span>Account created successfully! Please check your email to verify your account before signing in.</span>
           </div>
         )}
 
         {/* Error Alert */}
         {displayError && (
-          <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive">
-            <AlertCircle className="size-4 shrink-0 mt-0.5" />
-            <span>{displayError}</span>
+          <div className="mb-5 rounded-lg border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="size-4 shrink-0 mt-0.5" />
+              <span>{displayError}</span>
+            </div>
+            {showUnverifiedResend && (
+              <div className="mt-3 pt-3 border-t border-destructive/20">
+                <p className="text-[11px] text-muted-foreground mb-2">
+                  Need a new verification link?
+                </p>
+                <ResendVerificationForm initialEmail={email} />
+              </div>
+            )}
           </div>
         )}
 

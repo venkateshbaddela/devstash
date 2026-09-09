@@ -1,22 +1,34 @@
-# Current Feature
+# Current Feature: Email Verification on Register
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- What needs to be done. Check off as completed. -->
+- [x] Install and configure Resend SDK (`resend`) using `RESEND_API_KEY` from `.env`.
+- [x] Implement email verification token generation, storage, and validation using Prisma's `VerificationToken` model with an expiration time.
+- [x] Update user registration (`/api/auth/register`) to generate token and dispatch verification email via Resend instead of immediately allowing unverified sign-in.
+- [x] Update credentials sign-in authentication (`src/auth.ts`) to check `emailVerified` and reject unverified users with a clear error.
+- [x] Create verification page / route (`src/app/(auth)/verify-email/page.tsx`) to process verification tokens, mark `emailVerified` on the user, and provide clean user feedback.
+- [x] Add resend verification email functionality (API endpoint / action) for users whose token expired or was lost.
+- [x] Update registration UI (`RegisterForm`) to show confirmation message prompting the user to check their email.
+- [x] Write integration test script to verify token generation, email dispatch, verification handling, and credentials protection.
+- [x] Ensure clean lint (`npm run lint`) and production build (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Context, constraints, decisions made during implementation. -->
+- `RESEND_API_KEY` is present in `.env`.
+- Sender address: `onboarding@resend.dev` (standard Resend testing domain) or custom domain if configured.
+- `prisma/schema.prisma` already includes `VerificationToken` (`identifier`, `token`, `expires`) and `User.emailVerified` (`DateTime?`).
+- Existing GitHub OAuth users should remain unaffected as OAuth providers verify emails externally.
+- Keep Edge runtime compatibility intact for `src/proxy.ts` and `src/auth.config.ts` (Resend client and Prisma token management run in Node.js runtime).
 
 ---
 
