@@ -1,22 +1,48 @@
-# Current Feature
+# Current Feature: Auth Credentials - Email/Password Provider
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- What needs to be done. Check off as completed. -->
+- [x] Add Credentials provider placeholder in `src/auth.config.ts` (`authorize: () => null`)
+- [x] Implement Credentials provider in `src/auth.ts` with bcrypt password verification and database lookup
+- [x] Create registration API route at `src/app/api/auth/register/route.ts` (`POST`):
+  - [x] Validate request body (name, email, password, confirmPassword) and ensure passwords match
+  - [x] Check if email is already registered in the database
+  - [x] Hash password using `bcryptjs`
+  - [x] Create new user record in Neon database via Prisma
+  - [x] Return appropriate HTTP status codes and JSON responses
+- [x] Verify registration flow via API
+- [x] Verify sign-in flow at `/api/auth/signin` with email/password and redirect to `/dashboard`
+- [x] Verify GitHub OAuth provider continues to function alongside Credentials provider
+- [x] Verify build and lint (`npm run build`, `npm run lint`) pass cleanly
 
 ---
 
 ## Notes
 
-<!-- Context, constraints, decisions made during implementation. -->
+- **Spec source:** `context/features/auth-phase-2-spec.md`
+- **Split Auth Pattern:**
+  - `src/auth.config.ts`: Remains edge-compatible. Adds Credentials provider with `authorize: () => null` placeholder.
+  - `src/auth.ts`: Node.js runtime. Overrides Credentials provider with actual user lookup via Prisma and password verification via `bcryptjs`.
+- **Database & Dependencies:**
+  - The `password` field is already present on the `User` model in `prisma/schema.prisma`.
+  - `bcryptjs` and `@types/bcryptjs` are already installed.
+- **Testing:**
+  - Test registration endpoint:
+    ```bash
+    curl -X POST http://localhost:3000/api/auth/register \
+      -H "Content-Type: application/json" \
+      -d '{"name":"Test","email":"test@test.com","password":"password123","confirmPassword":"password123"}'
+    ```
+  - Sign in at `/api/auth/signin` and verify redirect to `/dashboard`.
+  - Confirm GitHub OAuth remains intact.
 
 ---
 

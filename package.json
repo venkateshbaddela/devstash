@@ -9,6 +9,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "test:db": "tsx scripts/test-db.ts",
+    "test:auth": "tsx scripts/test-auth-flow.ts",
     "studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy"
