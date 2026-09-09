@@ -1,48 +1,22 @@
-# Current Feature: Auth Credentials - Email/Password Provider
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- [x] Add Credentials provider placeholder in `src/auth.config.ts` (`authorize: () => null`)
-- [x] Implement Credentials provider in `src/auth.ts` with bcrypt password verification and database lookup
-- [x] Create registration API route at `src/app/api/auth/register/route.ts` (`POST`):
-  - [x] Validate request body (name, email, password, confirmPassword) and ensure passwords match
-  - [x] Check if email is already registered in the database
-  - [x] Hash password using `bcryptjs`
-  - [x] Create new user record in Neon database via Prisma
-  - [x] Return appropriate HTTP status codes and JSON responses
-- [x] Verify registration flow via API
-- [x] Verify sign-in flow at `/api/auth/signin` with email/password and redirect to `/dashboard`
-- [x] Verify GitHub OAuth provider continues to function alongside Credentials provider
-- [x] Verify build and lint (`npm run build`, `npm run lint`) pass cleanly
+<!-- What needs to be done. Check off as completed. -->
 
 ---
 
 ## Notes
 
-- **Spec source:** `context/features/auth-phase-2-spec.md`
-- **Split Auth Pattern:**
-  - `src/auth.config.ts`: Remains edge-compatible. Adds Credentials provider with `authorize: () => null` placeholder.
-  - `src/auth.ts`: Node.js runtime. Overrides Credentials provider with actual user lookup via Prisma and password verification via `bcryptjs`.
-- **Database & Dependencies:**
-  - The `password` field is already present on the `User` model in `prisma/schema.prisma`.
-  - `bcryptjs` and `@types/bcryptjs` are already installed.
-- **Testing:**
-  - Test registration endpoint:
-    ```bash
-    curl -X POST http://localhost:3000/api/auth/register \
-      -H "Content-Type: application/json" \
-      -d '{"name":"Test","email":"test@test.com","password":"password123","confirmPassword":"password123"}'
-    ```
-  - Sign in at `/api/auth/signin` and verify redirect to `/dashboard`.
-  - Confirm GitHub OAuth remains intact.
+<!-- Context, constraints, decisions made during implementation. -->
 
 ---
 
@@ -143,3 +117,13 @@ In Progress
 - Extended NextAuth types in `src/types/next-auth.d.ts` augmenting `Session` with `user.id` and `JWT` with `id`.
 - Normalized database SSL connections to `sslmode=verify-full` in `src/lib/prisma.ts` and `.env` to eliminate pg driver deprecation warnings.
 - Verified build and lint (`npm run build`, `npm run lint`) and confirmed OAuth redirect flows.
+
+### Auth Credentials - Email/Password Provider (2026-09-09)
+
+- Registered Credentials provider placeholder with `authorize: () => null` in `src/auth.config.ts` to preserve edge runtime compatibility in `src/proxy.ts`.
+- Implemented Node.js Credentials provider in `src/auth.ts` with Prisma database query and `bcrypt.compare` password verification.
+- Built user registration API route at `src/app/api/auth/register/route.ts` with input validation, duplicate email detection, bcrypt password hashing (12 rounds), and Prisma user creation.
+- Added comprehensive integration test script `scripts/test-auth-flow.ts` and `test:auth` npm script.
+- Verified registration, duplicate rejection, credentials login flow, session cookie generation, protected route access, and GitHub OAuth continuity.
+- Verified build and lint (`npm run build`, `npm run lint`).
+
