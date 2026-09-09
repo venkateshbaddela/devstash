@@ -137,3 +137,9 @@ Not Started
 - Updated sidebar user footer (`src/components/layout/sidebar-user-profile.tsx`) with dropdown menu (`src/components/ui/dropdown-menu.tsx`) linking to `/profile` and native NextAuth `signOut()`.
 - Created account profile page (`src/app/(app)/profile/page.tsx`) displaying user info and session management with server-side protection.
 - Verified test suites (`test:auth`, `test-github-oauth.ts`), ESLint, and production build cleanly.
+
+### Refactor Folder Structure - Route Groups & Server Actions (2026-09-09)
+
+- Reorganized auth route pages into `(auth)` route group (`src/app/(auth)/sign-in/page.tsx`, `src/app/(auth)/register/page.tsx`) to mirror `(app)` structure without altering URL paths.
+- Moved Server Actions from `src/app/actions/auth.ts` to `src/actions/auth.ts` matching project coding standards.
+- Verified zero breaking changes via ESLint (`npm run lint`), production build (`npm run build`), and database tests (`npm run test:db`).
