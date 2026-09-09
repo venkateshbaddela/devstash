@@ -7,7 +7,7 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `3aa592a` (`fix: resolve performance, routing, and architectural codebase issues`)
+- **Last Commit:** `4d0b1e9` (`chore: reset current-feature.md after completing auth-credentials`)
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including global system item types).
 
@@ -45,13 +45,15 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 - **18 Items:** Real developer snippets, prompts, bash commands, and resource links with tags and join tables.
 - **Verification Script:** Run `npm run test:db` (`scripts/test-db.ts`) to view all records and live stats.
 
-### D. Authentication Infrastructure (NextAuth v5 & GitHub OAuth)
+### D. Authentication Infrastructure (NextAuth v5 + GitHub & Credentials)
 - **NextAuth v5 (`next-auth@beta`):** Configured with Prisma adapter (`@auth/prisma-adapter`) and JWT session strategy (`session: { strategy: 'jwt' }`).
-- **Edge Split Pattern:** `src/auth.config.ts` houses edge-safe providers (GitHub OAuth) and pure `jwt` / `session` callbacks mapping `user.id`, while `src/auth.ts` integrates the Prisma adapter.
+- **Edge Split Pattern:** `src/auth.config.ts` houses edge-safe providers (GitHub OAuth and Credentials placeholder) and pure `jwt` / `session` callbacks, while `src/auth.ts` overrides Credentials with `bcryptjs` password comparison and Prisma database queries.
+- **Registration Route:** `src/app/api/auth/register/route.ts` validates registration data, hashes passwords with bcrypt (12 rounds), and persists new users.
 - **Route Protection (Next.js 16 Proxy):** `src/proxy.ts` exports named `export const proxy = auth(...)` with `NextResponse.redirect` protecting `/dashboard/*` and `/items/*` routes.
 - **Route Handlers:** `src/app/api/auth/[...nextauth]/route.ts` exposes NextAuth's `GET` and `POST` handlers.
 - **Type Augmentations:** `src/types/next-auth.d.ts` extends `Session` with `user.id: string` and `JWT` with `id?: string`.
 - **Database Driver Security:** Normalized connection strings in `src/lib/prisma.ts` and `.env` to `sslmode=verify-full` to eliminate `pg` driver deprecation warnings.
+- **Automated Verification:** `npm run test:auth` (`scripts/test-auth-flow.ts`) tests providers, proxy redirects, registration validation, duplicate email rejection, and credentials sign-in.
 
 ---
 
@@ -62,6 +64,7 @@ npm run dev         # Next.js dev server
 npm run build       # Next.js production build (Turbopack)
 npm run lint        # ESLint check
 npm run test:db     # Test Neon DB connection and print all demo data
+npm run test:auth   # Run end-to-end authentication and registration test suite
 npm run studio      # Launch Prisma Studio web GUI
 npm run db:migrate  # Run prisma migrate dev (dev schema changes)
 npm run db:deploy   # Run prisma migrate deploy (prod migrations)
@@ -86,6 +89,7 @@ npm run db:seed     # Run prisma db seed
 
 ## 5. Logical Next Step
  
-Both collections and items on the dashboard are now fully connected to the live Neon database. The logical next tasks are:
-1. **Connect Dynamic Route (`/items/[type]`):** Replace `mock-data.ts` in `/items/[type]` with live queries filtering items by system item type.
-2. **Item Quick-View Drawer:** Implement slide-over item details drawer with syntax highlighting, copy-to-clipboard, tags, and actions per `project-overview.md`.
+The authentication backend (GitHub OAuth, Credentials provider, and Registration API) is complete. The logical next tasks are:
+1. **Auth UI - Sign In, Register & Sign Out (`context/features/auth-phase-3-spec.md`):** Build custom branded `/sign-in` and `/register` pages and connect sidebar user profile & sign-out dropdown.
+2. **Connect Dynamic Route (`/items/[type]`):** Replace `mock-data.ts` in `/items/[type]` with live queries filtering items by system item type.
+3. **Item Quick-View Drawer:** Implement slide-over item details drawer with syntax highlighting, copy-to-clipboard, tags, and actions per `project-overview.md`.
