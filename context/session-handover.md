@@ -83,6 +83,7 @@ npm run lint        # ESLint check
 npm run test:db     # Test Neon DB connection and print all demo data
 npm run test:auth   # Run end-to-end authentication and registration test suite
 npm run test:reset  # Run password reset integration tests
+npm run test:profile # Run profile and settings integration tests
 npm run studio      # Launch Prisma Studio web GUI
 npm run db:migrate  # Run prisma migrate dev (dev schema changes)
 npm run db:deploy   # Run prisma migrate deploy (prod migrations)
@@ -107,7 +108,7 @@ npm run db:clean-users # Clean test users from DB
 
 ## 5. Logical Next Step
  
-All 3 phases of Authentication (GitHub OAuth, Credentials Provider, and Auth UI) are complete. The logical next tasks are:
-1. **Connect Dynamic Route (`/items/[type]`):** Replace `mock-data.ts` in `/items/[type]` with live queries filtering items by system item type for the authenticated user.
-2. **Item Quick-View Drawer:** Implement slide-over item details drawer with syntax highlighting, copy-to-clipboard, tags, and actions per `project-overview.md`.
-3. **Item Creation & Management Flow:** Add quick modal or page to create, edit, pin, favorite, and delete items and assign them to collections.
+Profile Page & Account Settings is fully complete, tested, and merged into `main`. The logical next tasks based on our UX audit are:
+1. **Scope Dashboard to Active User & Filter by Collection:** Ensure `DashboardPage` receives `session.user.id` so users see their own items rather than demo data, and wire up `?collection=...` search param to filter dashboard items with an active filter badge.
+2. **Connect Dynamic Route (`/items/[type]`):** Replace `mock-data.ts` in `/items/[type]` with live Prisma queries filtering items by system item type for the authenticated user.
+3. **Item Creation & Quick-View Flow:** Implement "New Item" and "New Collection" modals in `TopBar`, and an item details drawer with syntax-highlighted code and copy-to-clipboard.
