@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { getDefaultUserId } from "@/lib/db/collections";
 
@@ -207,8 +208,9 @@ const DISPLAY_NAMES: Record<string, string> = {
 
 /**
  * Fetches system item types with live item counts for the sidebar navigation.
+ * Memoized per server request using React cache().
  */
-export async function getSidebarItemTypes(
+export const getSidebarItemTypes = cache(async function getSidebarItemTypes(
   userId?: string
 ): Promise<SidebarItemType[]> {
   const targetUserId = userId ?? (await getDefaultUserId());
@@ -260,5 +262,5 @@ export async function getSidebarItemTypes(
         isPro,
       };
     });
-}
+});
 

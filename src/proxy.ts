@@ -10,7 +10,8 @@ export const proxy = auth((req) => {
   const isProtectedRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/items") ||
-    pathname.startsWith("/profile");
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/settings");
 
   if (isProtectedRoute && !isLoggedIn) {
     const callbackUrl = pathname + req.nextUrl.search;
@@ -21,5 +22,5 @@ export const proxy = auth((req) => {
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/items/:path*", "/profile/:path*"],
+  matcher: ["/dashboard/:path*", "/items/:path*", "/profile/:path*", "/settings/:path*"],
 };

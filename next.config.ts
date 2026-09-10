@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   experimental: {
     serverActions: {
+      bodySizeLimit: "4mb",
       allowedOrigins: [
         "*.app.github.dev",
         "fuzzy-journey-6pjppq4w6742rvpw-3000.app.github.dev",

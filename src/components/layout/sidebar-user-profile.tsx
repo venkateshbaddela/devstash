@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { User, LogOut, ChevronsUpDown } from "lucide-react";
+import { User, Settings, LogOut, ChevronsUpDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { handleSignOut } from "@/lib/auth-client";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -85,6 +85,13 @@ export function SidebarUserProfile({ user }: SidebarUserProfileProps) {
             >
               <User className="size-4 text-muted-foreground" />
               <span>Profile</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push("/settings")}
+              className="flex items-center gap-2 px-2.5 py-2 text-sm text-foreground hover:bg-muted/60 rounded-md cursor-pointer transition-colors"
+            >
+              <Settings className="size-4 text-muted-foreground" />
+              <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-1 bg-border/60" />
             <DropdownMenuItem

@@ -5,7 +5,12 @@ import { handleSignOut } from "@/lib/auth-client";
 import { LogOut, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function SignOutButton({ className }: { className?: string }) {
+interface SignOutButtonProps {
+  className?: string;
+  variant?: "default" | "outline" | "secondary" | "ghost" | "destructive";
+}
+
+export function SignOutButton({ className, variant = "outline" }: SignOutButtonProps) {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const onSignOut = async () => {
@@ -15,7 +20,7 @@ export function SignOutButton({ className }: { className?: string }) {
 
   return (
     <Button
-      variant="destructive"
+      variant={variant}
       size="sm"
       onClick={onSignOut}
       disabled={isLoading}

@@ -11,6 +11,7 @@
     "test:db": "tsx scripts/test-db.ts",
     "test:auth": "tsx scripts/test-auth-flow.ts",
     "test:reset": "tsx scripts/test-password-reset.ts",
+    "test:profile": "tsx scripts/test-profile-actions.ts",
     "studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
