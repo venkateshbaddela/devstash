@@ -64,6 +64,14 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 - **Account Profile Page (`/profile`):** Server-rendered profile screen displaying name, email, avatar, tier, authentication method, and session sign-out action.
 - **GitHub OAuth Test Script:** `scripts/test-github-oauth.ts` verifies OAuth initiation, PKCE challenges, CSRF tokens, and database account links.
 
+### F. Email Verification & Password Reset Flows
+- **VerificationToken Model Reuse:** Utilizes existing Prisma `verification_tokens` table for both email verification (24h expiry) and password reset tokens (1h expiry, namespaced identifier `password-reset:${email}`).
+- **Resend Integration (`src/lib/mail.ts`):** Sends branded HTML and plain-text emails for verification (`/verify-email?token=...`) and password resets (`/reset-password?token=...`).
+- **Forgot Password Flow:** Dedicated `/forgot-password` route with `ForgotPasswordForm` providing generic success feedback against email enumeration.
+- **Reset Password Flow:** Dedicated `/reset-password` route with server-side token validation on load, invalid/expired token handling, `ResetPasswordForm` with password confirmation and show/hide toggles, atomic token consumption, and auto email verification on password reset.
+- **Sign In Link & Feedback:** Direct "Forgot password?" link on `/sign-in` and `?reset=true` success notification alert.
+- **Automated Verification:** `npm run test:reset` (`scripts/test-password-reset.ts`) tests token generation, namespace isolation, expiration, password reset, token replay protection, and bcrypt verification.
+
 ---
 
 ## 3. Handy Commands
@@ -74,10 +82,12 @@ npm run build       # Next.js production build (Turbopack)
 npm run lint        # ESLint check
 npm run test:db     # Test Neon DB connection and print all demo data
 npm run test:auth   # Run end-to-end authentication and registration test suite
+npm run test:reset  # Run password reset integration tests
 npm run studio      # Launch Prisma Studio web GUI
 npm run db:migrate  # Run prisma migrate dev (dev schema changes)
 npm run db:deploy   # Run prisma migrate deploy (prod migrations)
 npm run db:seed     # Run prisma db seed
+npm run db:clean-users # Clean test users from DB
 ```
 
 ---
