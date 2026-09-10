@@ -1,39 +1,22 @@
-# Current Feature: Profile Page
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- [x] Query live user data directly in `/profile` and `/settings` Server Components from Prisma (`createdAt`, `image`, `password !== null`, and OAuth detection).
-- [x] Query live user stats from Prisma: total items, total collections, and item count breakdown by system item type (snippets, prompts, notes, commands, links, files, images).
-- [x] Display comprehensive user profile info card on `/profile`: name, email, formatted account creation date, tier badge, and authentication provider method with direct link to `/settings`.
-- [x] Implement dedicated `/settings` page (`src/app/(app)/settings/page.tsx`) separating configuration actions from the profile overview.
-- [x] Build editable personal details form (`GeneralSettingsForm`) allowing users to edit display name and email address.
-- [x] Implement Option B email verification: when email is changed, set `emailVerified: null`, generate token via Prisma, and dispatch verification email via Resend.
-- [x] Provide avatar management to upload or change custom avatar image (file input with preview, size/type validation, client canvas resizing, and server action).
-- [x] Display usage statistics section on `/profile` with summary cards and visual item type count breakdown.
-- [x] Add "Change Password" functionality in `SecurityCard` (only for users with email/password credentials) with current password verification, new password validation (min 8 chars, match confirmation), and bcrypt hashing.
-- [x] Add "Delete Account" action in `DangerZoneCard` with an explicit confirmation dialog, cascading data deletion, session termination, and redirect to `/sign-in`.
-- [x] Add "Settings" option in sidebar user dropdown menu (`src/components/layout/sidebar-user-profile.tsx`) and protect `/settings` in `src/proxy.ts`.
-- [x] Implement Server Actions in `src/actions/profile.ts` (`updateProfileDetailsAction`, `updateAvatarAction`, `changePasswordAction`, `deleteAccountAction`) with authentication guards and strict error handling.
-- [x] Create automated integration test script (`scripts/test-profile-actions.ts`) verifying profile details update, verification token generation, password change, avatar update, and account deletion flows.
-- [x] Verify build and linting (`npm run build`, `npm run lint`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- **Authentication Guard:** The `/profile` route is protected by both `src/proxy.ts` and server-side `auth()` redirect to `/sign-in`.
-- **Credential Detection:** Check `user.password !== null` to distinguish email/password accounts from OAuth-only accounts. "Change Password" option must only be shown for email/password users.
-- **Avatar Storage:** Support custom image file upload (PNG/JPEG/WEBP, max 2MB) stored as optimized data URL / avatar in `user.image`, allowing users to customize their avatar while falling back to GitHub image or initials.
-- **Cascading Deletion:** Deleting user cascades to items, collections, tags, item_types, sessions, accounts, and tokens via Prisma relations (`onDelete: Cascade`). Safeguard `demo@devstash.io` from accidental deletion in tests.
-- **Styling:** Adhere to dark-mode first styling with shadcn/ui components (`Dialog`, `Button`, `Input`, `Badge`), Tailwind CSS v4, and Lucide icons.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -185,3 +168,19 @@ In Progress
 - Built `/reset-password` route and `ResetPasswordForm` component in `src/app/(auth)/reset-password/page.tsx` and `src/components/auth/reset-password-form.tsx` with token verification on load, expired/invalid token handling, and new password confirmation.
 - Added automated integration test suite in `scripts/test-password-reset.ts` and `npm run test:reset` in `package.json`.
 - Verified 100% passing tests, zero ESLint errors/warnings (`npm run lint`), and clean production build (`npm run build`).
+
+### Profile Page & Account Settings (2026-09-10)
+
+- Queried live user profile details (`createdAt`, `image`, `hasPassword`, `authMethod`) and Knowledge Hub statistics (total items, collections, system item type breakdown) directly via Prisma with React `cache()` deduplication.
+- Separated `/profile` (identity showcase and knowledge metrics) from `/settings` (account actions, credentials, active sessions, and danger zone) to eliminate visual clutter.
+- Built streamlined `ProfileHeader` on `/profile` displaying avatar, user name, tier badge (`Free Tier` / `PRO Plan`), email, member since date, authentication method, and direct link to Settings.
+- Built dedicated `SettingsPage` (`src/app/(app)/settings/page.tsx`) organized into modular cards:
+  - `GeneralSettingsForm`: Custom avatar management (with 256px client-side canvas resizing) and editable display name with dirty-state save.
+  - `SecurityCard`: Authentication provider status, primary login email editing with Option B email verification (generating tokens via Prisma and sending verification links via Resend), password update dialog with current password check and 8+ char rule, and active device session with red destructive `SignOutButton`.
+  - `DangerZoneCard`: Account deletion confirmation modal requiring typing current email before cascading permanent deletion (safeguarding `demo@devstash.io`).
+- Created accessible `Dialog` modal primitive in `src/components/ui/dialog.tsx` using `@base-ui/react/dialog` and shadcn design tokens.
+- Added "Settings" link to sidebar user dropdown in `src/components/layout/sidebar-user-profile.tsx` and protected `/settings/*` in `src/proxy.ts`.
+- Implemented Server Actions in `src/actions/profile.ts` (`updateNameAction`, `updateEmailAction`, `updateProfileDetailsAction`, `updateAvatarAction`, `changePasswordAction`, `deleteAccountAction`) with strict validation, bcrypt hashing, and demo user safeguards.
+- Added automated integration test suite in `scripts/test-profile-actions.ts` (`npm run test:profile`) covering all 6 core workflows.
+- Verified cleanly across ESLint (`npm run lint`), production build (`npm run build`), and automated tests (`npm run test:profile`).
+
