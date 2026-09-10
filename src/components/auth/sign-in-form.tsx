@@ -27,6 +27,7 @@ export function SignInForm() {
       : "/dashboard";
   const registered = searchParams.get("registered") === "true";
   const verified = searchParams.get("verified") === "true";
+  const reset = searchParams.get("reset") === "true";
   const urlError = searchParams.get("error");
   const errorCode = searchParams.get("code");
 
@@ -146,8 +147,16 @@ export function SignInForm() {
 
       {/* Main Card */}
       <div className="rounded-2xl border border-border/70 bg-card/60 p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/40">
+        {/* Password Reset Alert */}
+        {reset && !displayError && (
+          <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-400">
+            <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+            <span>Password reset successfully! You can now sign in with your new password.</span>
+          </div>
+        )}
+
         {/* Email Verified Alert */}
-        {verified && !displayError && (
+        {verified && !displayError && !reset && (
           <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-400">
             <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
             <span>Email verified successfully! You can now sign in with your credentials.</span>
@@ -155,7 +164,7 @@ export function SignInForm() {
         )}
 
         {/* Success Alert (from register redirect) */}
-        {registered && !displayError && !verified && (
+        {registered && !displayError && !verified && !reset && (
           <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-400">
             <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
             <span>Account created successfully! Please check your email to verify your account before signing in.</span>
@@ -242,6 +251,12 @@ export function SignInForm() {
               >
                 Password
               </label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors hover:underline"
+              >
+                Forgot password?
+              </Link>
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />

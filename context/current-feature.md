@@ -1,22 +1,38 @@
-# Current Feature
+# Current Feature: Forgot Password Link & Reset Functionality
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- What needs to be done. Check off as completed. -->
+- [x] Add "Forgot password?" link to the sign-in form (`src/components/auth/sign-in-form.tsx`) pointing to `/forgot-password`.
+- [x] Add support for `?reset=true` success message banner on `/sign-in`.
+- [x] Create token lifecycle functions in `src/lib/tokens.ts` utilizing the existing `VerificationToken` Prisma model (`generatePasswordResetToken`, `verifyPasswordResetToken`, and `consumePasswordResetToken`).
+- [x] Implement `sendPasswordResetEmail` in `src/lib/mail.ts` with branded HTML and plain-text templates linking to `/reset-password?token=...`.
+- [x] Implement Server Actions in `src/actions/auth.ts` (`requestPasswordResetAction` and `resetPasswordAction`) with input validation and bcrypt hashing (12 rounds).
+- [x] Build `/forgot-password` page (`src/app/(auth)/forgot-password/page.tsx`) and `ForgotPasswordForm` component with email validation and success message.
+- [x] Build `/reset-password` page (`src/app/(auth)/reset-password/page.tsx`) and `ResetPasswordForm` component with password match validation, error states for invalid/expired tokens, and redirect to `/sign-in?reset=true`.
+- [x] Create automated integration test script (`scripts/test-password-reset.ts`) to verify end-to-end token generation, email dispatch, password update, and authentication with new credentials.
+- [x] Verify build and linting (`npm run build`, `npm run lint`).
 
 ---
 
 ## Notes
 
-<!-- Context, constraints, decisions made during implementation. -->
+- **Model Reuse:** We are reusing the existing Prisma `VerificationToken` model (`identifier`, `token`, `expires`) without any schema migrations.
+- **Identifier Namespacing:** To prevent collision or accidental deletion of email verification tokens (and prevent token swapping attacks), the reset token identifier will be stored as `password-reset:${email}`.
+- **Token Expiration:** Password reset tokens will expire in 1 hour (industry security standard, vs. 24 hours for email verification).
+- **Security:**
+  - Email enumeration protection: Forgot password requests will return a generic success message regardless of whether the email exists in the database.
+  - Password hashing: All new passwords will be hashed with `bcryptjs` using 12 salt rounds matching `src/app/api/auth/register/route.ts`.
+  - Transactional update: Password update and token deletion are executed atomically via `prisma.$transaction`.
+  - Also marks `emailVerified` as verified if the user successfully resets password via their email link.
+- **Styling & Conventions:** Dark-mode first styling with shadcn/ui components, Tailwind CSS v4, Lucide icons, and server actions adhering to project coding standards.
 
 ---
 
