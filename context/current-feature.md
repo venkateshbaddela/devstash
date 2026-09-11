@@ -1,42 +1,22 @@
-# Current Feature: Rate Limiting for Auth
+# Current Feature
 
 ---
 
 ## Status
 
-Complete
+Not Started
 
 ---
 
 ## Goals
 
-- [x] Install `@upstash/ratelimit` and `@upstash/redis` dependencies.
-- [x] Create reusable rate limiting utility in `src/lib/rate-limit.ts` using Upstash Redis with sliding window algorithm.
-- [x] Implement client IP extraction helper supporting `x-forwarded-for`, `x-real-ip`, and request headers.
-- [x] Support fail-open behavior so requests are allowed if Upstash Redis credentials are not configured or if the service is unreachable.
-- [x] Protect registration (`/api/auth/register`): 3 attempts per 1 hour keyed by IP.
-- [x] Protect email verification resend (`/api/auth/resend-verification` and `resendVerificationAction`): 3 attempts per 15 min keyed by IP + email.
-- [x] Protect forgot password requests (`requestPasswordResetAction`): 3 attempts per 1 hour keyed by IP.
-- [x] Protect password reset completion (`resetPasswordAction`): 5 attempts per 15 min keyed by IP.
-- [x] Protect credentials login (`authorize` in `src/auth.ts` / credentials callback): 5 attempts per 15 min keyed by IP + email and 30 attempts per 15 min keyed by IP.
-- [x] Return 429 status code with `{ error: "Too many attempts. Please try again in X minutes." }` and `Retry-After` header on API routes, and user-friendly error messages from Server Actions.
-- [x] Ensure frontend forms (Sign In, Register, Forgot Password, Reset Password, Resend Verification) properly display rate limit feedback to the user.
-- [x] Document `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.example`.
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- **Endpoints & Limits**:
-  - Credentials login: 5 attempts / 15 min (Key: IP + email)
-  - Register: 3 attempts / 1 hour (Key: IP)
-  - Forgot password: 3 attempts / 1 hour (Key: IP)
-  - Reset password: 5 attempts / 15 min (Key: IP)
-  - Resend verification: 3 attempts / 15 min (Key: IP + email)
-- **Algorithm**: Sliding window counter via `@upstash/ratelimit`.
-- **Fail-Open Strategy**: Rate limiter must gracefully catch Redis errors or missing environment variables to prevent locking out users in local development or during Upstash outages.
-- **NextAuth Integration**: For Credentials login, check limits inside `authorize()` or route handler using headers (`headers()` from `next/headers`).
-- **Audit Correlation**: Directly resolves `[HIGH-3]` from `docs/audit-results/AUTH_SECURITY_REVIEW.md`.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -203,4 +183,22 @@ Complete
 - Implemented Server Actions in `src/actions/profile.ts` (`updateNameAction`, `updateEmailAction`, `updateProfileDetailsAction`, `updateAvatarAction`, `changePasswordAction`, `deleteAccountAction`) with strict validation, bcrypt hashing, and demo user safeguards.
 - Added automated integration test suite in `scripts/test-profile-actions.ts` (`npm run test:profile`) covering all 6 core workflows.
 - Verified cleanly across ESLint (`npm run lint`), production build (`npm run build`), and automated tests (`npm run test:profile`).
+
+### Rate Limiting for Auth (2026-09-11)
+
+- Installed `@upstash/ratelimit` and `@upstash/redis` for serverless-native sliding window rate limiting.
+- Implemented reusable rate-limiting utility in `src/lib/rate-limit.ts` supporting sliding window quotas, timeout-based fail-open safety (`timeout: 1500`), and RFC-compliant HTTP 429 response formatting with `Retry-After` and `X-RateLimit-*` headers.
+- Built robust client IP extraction helper (`getClientIp`) prioritizing authenticated edge headers (`cf-connecting-ip`, `x-real-ip`) over `x-forwarded-for` with `127.0.0.1` fallback, effectively preventing IP spoofing.
+- Implemented two-tier rate limiting for NextAuth credentials sign-in in `src/auth.ts`: global per-IP limiter (`login-ip`, 30 attempts / 15 min) preventing horizontal password spraying, and per-account limiter (`login`, 5 attempts / 15 min keyed by `IP:email`) preventing targeted brute force.
+- Protected registration endpoint (`POST /api/auth/register`) with 3 attempts per 1 hour keyed by client IP.
+- Protected email verification resend endpoint (`POST /api/auth/resend-verification`) and Server Action (`resendVerificationAction`) with 3 attempts per 15 min keyed by `IP:email`.
+- Protected forgot password requests (`requestPasswordResetAction` and `POST /api/auth/forgot-password`) with 3 attempts per 1 hour keyed by client IP.
+- Protected password reset completion (`resetPasswordAction` and `POST /api/auth/reset-password`) with 5 attempts per 15 min keyed by client IP.
+- Extracted core password reset business logic into `src/lib/auth-core.ts` (pure library code without `"use server"`) to eliminate client-side parameter manipulation/bypass attacks and prevent double rate-limiting between API routes and Server Actions.
+- Validated email and password input formats before checking rate limits to avoid consuming user quotas on accidental typos.
+- Enhanced client-side `SignInForm` to inspect `res?.url` for `code=rate_limited` and `code=email_not_verified` under NextAuth v5 `signIn("credentials", { redirect: false })`.
+- Verified user-facing cooldown feedback across all authentication forms (Sign In, Register, Forgot Password, Reset Password, Resend Verification).
+- Documented `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.example`.
+- Created comprehensive integration test suite `scripts/test-rate-limit.ts` (`npm run test:rate-limit`).
+- Verified 100% passing tests across all test suites (`test:rate-limit`, `test:reset`, `test:profile`), clean ESLint (`npm run lint`), and clean production build (`npm run build`).
 
