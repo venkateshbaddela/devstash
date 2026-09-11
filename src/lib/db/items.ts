@@ -264,3 +264,101 @@ export const getSidebarItemTypes = cache(async function getSidebarItemTypes(
     });
 });
 
+export interface ResolvedItemType {
+  id: string;
+  name: string;
+  displayName: string;
+  icon: string;
+  color: string;
+  isSystem: boolean;
+  isPro?: boolean;
+}
+
+/**
+ * Resolves an ItemType by slug (supports singular/plural, system or user-defined).
+ * Memoized per server request using React cache().
+ */
+export const resolveItemTypeBySlug = cache(async function resolveItemTypeBySlug(
+  slug: string,
+  userId?: string
+): Promise<ResolvedItemType | null> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+  const normalized = slug.trim().toLowerCase();
+  const singular = normalized.replace(/s$/, "");
+
+  const itemTypes = await prisma.itemType.findMany({
+    where: {
+      OR: [
+        { isSystem: true },
+        ...(targetUserId ? [{ userId: targetUserId }] : []),
+      ],
+    },
+  });
+
+  const matchedType = itemTypes.find((t) => {
+    const tName = t.name.toLowerCase();
+    const tSingular = tName.replace(/s$/, "");
+    return (
+      tName === normalized ||
+      tSingular === normalized ||
+      tName === singular ||
+      tSingular === singular ||
+      t.id === slug
+    );
+  });
+
+  if (!matchedType) return null;
+
+  const lower = matchedType.name.toLowerCase();
+  const displayName =
+    DISPLAY_NAMES[lower] ||
+    matchedType.name.charAt(0).toUpperCase() + matchedType.name.slice(1);
+  const isPro = lower === "file" || lower === "image";
+
+  return {
+    id: matchedType.id,
+    name: matchedType.name,
+    displayName,
+    icon: matchedType.icon,
+    color: matchedType.color,
+    isSystem: matchedType.isSystem,
+    isPro,
+  };
+});
+
+/**
+ * Fetches items belonging to a specific item type slug or ID.
+ * Scoped to the authenticated user or default demo user.
+ * Memoized per server request using React cache().
+ */
+export const getItemsByType = cache(async function getItemsByType(
+  slugOrId: string,
+  userId?: string,
+  limit?: number
+): Promise<{ itemType: ResolvedItemType | null; items: DashboardItem[] }> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+  if (!targetUserId) {
+    return { itemType: null, items: [] };
+  }
+
+  const itemType = await resolveItemTypeBySlug(slugOrId, targetUserId);
+  if (!itemType) {
+    return { itemType: null, items: [] };
+  }
+
+  const items = await prisma.item.findMany({
+    where: {
+      userId: targetUserId,
+      itemTypeId: itemType.id,
+    },
+    orderBy: { createdAt: "desc" },
+    ...(limit ? { take: limit } : {}),
+    select: DASHBOARD_ITEM_SELECT,
+  });
+
+  return {
+    itemType,
+    items: items.map(mapToDashboardItem),
+  };
+});
+

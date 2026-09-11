@@ -1,7 +1,6 @@
-import * as React from "react";
 import Link from "next/link";
 import { Layers, Folder, ArrowRight } from "lucide-react";
-import { ICON_MAP } from "@/components/layout/sidebar-nav-types";
+import { ItemTypeIcon } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import type { SidebarItemType } from "@/lib/db/items";
 
@@ -75,7 +74,6 @@ export function ProfileStats({
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {itemTypes.map((type) => {
-            const IconComponent = ICON_MAP[type.name.toLowerCase()] || Layers;
             const percentage =
               totalItems > 0 ? Math.round((type.count / totalItems) * 100) : 0;
 
@@ -95,7 +93,7 @@ export function ProfileStats({
                         color: type.color,
                       }}
                     >
-                      <IconComponent className="size-4" />
+                      <ItemTypeIcon name={type.icon || type.name} className="size-4" />
                     </div>
                     <div className="truncate">
                       <div className="flex items-center gap-1.5">

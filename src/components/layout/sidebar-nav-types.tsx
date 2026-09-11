@@ -3,38 +3,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Code,
-  Sparkles,
-  Terminal,
-  StickyNote,
-  File,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  ChevronDown,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ItemTypeIcon, ICON_MAP } from "@/lib/icons";
 
-export const ICON_MAP: Record<string, LucideIcon> = {
-  Code,
-  Sparkles,
-  Terminal,
-  StickyNote,
-  File,
-  Image: ImageIcon,
-  Link: LinkIcon,
-  // System item type name mappings
-  snippet: Code,
-  prompt: Sparkles,
-  command: Terminal,
-  note: StickyNote,
-  file: File,
-  image: ImageIcon,
-  link: LinkIcon,
-};
+export { ICON_MAP };
 
 export interface SidebarNavType {
   id: string;
@@ -76,8 +51,6 @@ export function SidebarNavTypes({ itemTypes, onItemClick }: SidebarNavTypesProps
       {isTypesOpen && (
         <nav className="space-y-0.5 pt-0.5" aria-label="Item Types">
           {itemTypes.map((type) => {
-            const IconComponent =
-              ICON_MAP[type.icon] || ICON_MAP[type.name] || Code;
             const displayName = type.displayName || type.name;
             const typeHref = type.href || `/items/${type.name}`;
 
@@ -106,7 +79,8 @@ export function SidebarNavTypes({ itemTypes, onItemClick }: SidebarNavTypesProps
                 )}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <IconComponent
+                  <ItemTypeIcon
+                    name={type.icon || type.name}
                     className="size-4 shrink-0 transition-transform duration-150 group-hover:scale-110"
                     style={{ color: type.color }}
                   />

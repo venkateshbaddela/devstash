@@ -1,22 +1,32 @@
-# Current Feature
+# Current Feature: Items List View
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- [x] Connect dynamic route `/items/[type]` to live database queries via Prisma in `src/lib/db/items.ts` (replacing `src/lib/mock-data.ts`).
+- [x] Support slug normalization for singular and plural type routes (e.g., `/items/snippets` and `/items/snippet`, `/items/notes` and `/items/note`).
+- [x] Scope item queries to the active authenticated user session (with fallback to default user).
+- [x] Display a responsive grid of `ItemCard` components (single column on mobile, two columns on medium and up: `grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4`).
+- [x] Ensure item cards display left border accent matching item type color, type icons, tags, favorite stars, and pin indicators.
+- [x] Render breadcrumbs (`Dashboard > [Item Type]`), page title, item counter, and polished empty state when no items exist for the type.
+- [x] Verify 0 ESLint errors/warnings (`npm run lint`) and clean production build (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- Spec file: `context/features/item-list-view-spec.md`
+- Architecture reference: `docs/item-crud-architecture.md` and `docs/item-types.md`
+- Next.js 16 App Router requires awaiting params (`const { type } = await params`).
+- Query helper `getItemsByType` in `src/lib/db/items.ts` should fetch items by matching `itemType.name` or `itemType.id`, returning mapped `DashboardItem` objects.
+- Two-column responsive layout on `md:` breakpoints per spec.
 
 ---
 

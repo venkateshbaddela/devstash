@@ -1,44 +1,13 @@
-import {
-  Code,
-  Sparkles,
-  Terminal,
-  StickyNote,
-  File,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  Star,
-  Pin,
-  type LucideIcon,
-} from "lucide-react";
+import { Star, Pin } from "lucide-react";
 import type { Item as MockItem } from "@/lib/mock-data";
 import type { DashboardItem } from "@/lib/db/items";
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  Code,
-  Sparkles,
-  Terminal,
-  StickyNote,
-  File,
-  Image: ImageIcon,
-  Link: LinkIcon,
-  // System item type name mappings
-  snippet: Code,
-  prompt: Sparkles,
-  command: Terminal,
-  note: StickyNote,
-  file: File,
-  image: ImageIcon,
-  link: LinkIcon,
-};
+import { ItemTypeIcon } from "@/lib/icons";
 
 interface ItemCardProps {
   item: DashboardItem | MockItem;
 }
 
 export function ItemCard({ item }: ItemCardProps) {
-  const IconComponent =
-    ICON_MAP[item.typeIcon] || ICON_MAP[item.type] || Code;
-
   return (
     <article
       className="group relative flex items-start gap-3.5 sm:gap-4 rounded-xl border border-border/80 bg-card/40 p-3.5 sm:p-4 transition-all hover:bg-card/70 hover:border-border cursor-pointer"
@@ -49,7 +18,8 @@ export function ItemCard({ item }: ItemCardProps) {
     >
       {/* Icon Square */}
       <div className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-muted/40 shrink-0 mt-0.5">
-        <IconComponent
+        <ItemTypeIcon
+          name={item.typeIcon || item.type}
           className="size-4 sm:size-4.5"
           style={{ color: item.typeColor || "#3b82f6" }}
         />
