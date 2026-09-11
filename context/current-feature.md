@@ -1,30 +1,22 @@
-# Current Feature: Responsive Three-Column Item Grid
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- [x] Update responsive grid layout in `src/app/(app)/items/[type]/page.tsx` from 2 columns (`md:grid-cols-2`) to 3 columns on larger screens (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4`).
-- [x] Ensure `ItemCard` component styling, badge pills, tags, accent borders, and dates adapt cleanly in the 3-column layout without clipping or layout breakage.
-- [x] Verify responsive breakpoints across mobile (1 column), tablet/medium screens (2 columns), and desktop/large screens (3 columns).
-- [x] Run unit tests (`npm test`) and items test suite (`npm run test:items`) to ensure no regressions.
-- [x] Verify ESLint (`npm run lint`) and Next.js production build (`npm run build`) pass with 0 errors.
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- User prompt: "make item listings in when a type is clicked on side to three row instead of two rows on larger screens".
-- Route: `src/app/(app)/items/[type]/page.tsx`.
-- Component: `src/components/dashboard/item-card.tsx`.
-- Breakpoints: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` (with responsive gaps `gap-3.5 sm:gap-4`).
-- Preserves all existing functionality: empty states, metadata, Lucide icons, PRO badge indicators, session scoping.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -258,3 +250,11 @@ In Progress
   - `tests/unit/actions/auth.test.ts`: Email verification resend, verification tokens, and enumeration-safe responses.
 - Updated documentation and testing standards across `context/ai-interaction.md`, `context/coding-standards.md`, `context/project-overview.md`, `context/session-handover.md`, and `AGENTS.md`.
 - Verified cleanly with 61/61 passing unit tests (`npm test`), 0 ESLint errors/warnings (`npm run lint`), and clean production build (`npm run build`).
+
+### Responsive Three-Column Item Grid (2026-09-11)
+
+- Updated items list view grid layout in `src/app/(app)/items/[type]/page.tsx` from 2 columns to 3 columns on larger viewports (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4`).
+- Aligned grid density with `CollectionsGrid` on `/dashboard`, improving visual balance in the `max-w-7xl` container on desktop screens ($\ge 1024\text{px}$).
+- Preserved single-column presentation on mobile and two-column presentation on tablets (`md:`).
+- Verified `ItemCard` visual components (Lucide type icons, color accents, tags, star/pin badges, dates) scale cleanly in 3-column rows without text overflow.
+- Verified 100% passing across Vitest unit tests (`npm test` - 61/61 passed), integration tests (`npm run test:items` - 47/47 passed), ESLint (`npm run lint`), and Next.js production build (`npm run build`).

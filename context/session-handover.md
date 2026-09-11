@@ -7,7 +7,7 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `feat(items): implement dynamic items list view with live database queries`
+- **Last Commit:** `feat(items): expand items list view grid to 3 columns on larger screens`
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including `tokenVersion` column on `users` table).
 
@@ -102,7 +102,7 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 - **Slug Normalization:** `resolveItemTypeBySlug` transparently normalizes both singular and plural type routes (e.g., `/items/snippets` and `/items/snippet`, `/items/notes` and `/items/note`) with React `cache()` memoization.
 - **User Scoping:** Scopes queries to active authenticated user session (`auth()`) with fallback to default demo user.
 - **RSC Boundary Safety:** Centralized dynamic Lucide icon rendering in `src/lib/icons.tsx` (`<ItemTypeIcon />`), eliminating RSC boundary serialization errors (`Element type is invalid`) and adhering to React Compiler static component rules.
-- **Responsive 2-Column Grid:** Displays `ItemCard` grid (`grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4`) with type-matched left accent borders, tags, pin indicators, and favorite stars.
+- **Responsive 3-Column Grid:** Displays `ItemCard` grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4`) with type-matched left accent borders, tags, pin indicators, and favorite stars.
 - **Header & Breadcrumbs:** Displays breadcrumb navigation (`Dashboard > [Item Type]`), page title, description, PRO badge, item counter, and polished empty state when no items exist.
 ### K. Unit Testing Infrastructure (Vitest)
 - **Framework & Config:** Configured Vitest 5 (`vitest.config.mts`) targeting Node.js environment (`environment: 'node'`) with automatic `.env` loading and path alias resolution (`@/*`, `~/*`).
