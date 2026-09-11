@@ -7,9 +7,9 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `2689dcb` (`chore: reset current-feature.md after completing auth-ui`)
+- **Last Commit:** `chore: reset current-feature.md after completing auth-security-remediation`
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
-- **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including global system item types).
+- **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including `tokenVersion` column on `users` table).
 
 ---
 
@@ -82,7 +82,16 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
   - Reset password (`resetPasswordAction` and `POST /api/auth/reset-password`): 5 attempts / 15 min keyed by client IP.
 - **Architectural Security:** Extracted core logic into `src/lib/auth-core.ts` (pure library code without `"use server"`) to prevent RPC parameter tampering, and prioritized trusted proxy headers (`cf-connecting-ip`, `x-real-ip`) over `x-forwarded-for` to prevent IP spoofing.
 - **RFC-Compliant Responses & UI Feedback:** API routes return 429 Too Many Requests with `Retry-After` and `X-RateLimit-*` headers; Server Actions return user-friendly error messages, properly rendered across all 5 auth forms.
-- **Automated Verification:** `npm run test:rate-limit` (`scripts/test-rate-limit.ts`) tests IP extraction, header precedence, sliding-window quotas, HTTP 429 responses, and fail-open behavior.
+### H. Auth Security Remediation
+- **Session Invalidation on Password Change/Reset [HIGH-1]:** Added `tokenVersion Int @default(0)` to `User` model (`20260911101800_add_user_token_version` migration applied to Neon `development` branch). Increments `tokenVersion` on password change and password reset. NextAuth `jwtCallback` in `src/auth.ts` verifies `token.tokenVersion === dbUser.tokenVersion` and invalidates (`return null`) stale sessions immediately.
+- **SHA-256 Reset Token Hashing [HIGH-2]:** `src/lib/tokens.ts` hashes password reset tokens with SHA-256 before inserting into or querying `verification_tokens`. Plaintext tokens are only dispatched to user emails.
+- **Atomic Registration [LOW-1]:** User creation and verification token generation in `src/app/api/auth/register/route.ts` are bound within an atomic `prisma.$transaction`.
+- **Password Length Enforcement [MED-2]:** Hardened registration, reset, and profile password change endpoints and UI forms with $\le 72$ character limits preventing silent bcrypt truncation and CPU exhaustion DoS.
+- **Account Enumeration Defense [MED-1]:** Unified `POST /api/auth/resend-verification` and `resendVerificationAction` responses to return an identical generic HTTP 200 message regardless of account status.
+- **Automated Verification:**
+  - `npm run test:session` (`scripts/test-token-version.ts`) tests token version invalidation.
+  - `npm run test:atomic-reg` (`scripts/test-atomic-registration.ts`) tests atomic registration rollbacks.
+  - `npm run test:length` (`scripts/test-password-length.ts`) tests 72-char bcrypt boundary constraints.
 
 ---
 
@@ -97,6 +106,9 @@ npm run test:auth   # Run end-to-end authentication and registration test suite
 npm run test:reset  # Run password reset integration tests
 npm run test:profile # Run profile and settings integration tests
 npm run test:rate-limit # Run rate limiting integration tests
+npm run test:session # Run session invalidation token version tests
+npm run test:atomic-reg # Run atomic registration transaction tests
+npm run test:length  # Run password length constraint tests
 npm run studio      # Launch Prisma Studio web GUI
 npm run db:migrate  # Run prisma migrate dev (dev schema changes)
 npm run db:deploy   # Run prisma migrate deploy (prod migrations)
