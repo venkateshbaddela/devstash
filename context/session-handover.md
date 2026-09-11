@@ -72,6 +72,18 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 - **Sign In Link & Feedback:** Direct "Forgot password?" link on `/sign-in` and `?reset=true` success notification alert.
 - **Automated Verification:** `npm run test:reset` (`scripts/test-password-reset.ts`) tests token generation, namespace isolation, expiration, password reset, token replay protection, and bcrypt verification.
 
+### G. Rate Limiting for Auth
+- **Upstash Redis Integration (`src/lib/rate-limit.ts`):** Serverless sliding-window counter rate limiting using `@upstash/ratelimit` and `@upstash/redis` with fail-open timeout safety (`timeout: 1500`).
+- **Protected Endpoints:**
+  - Credentials login: Two-tier defense in `src/auth.ts` (`login-ip` 30 attempts / 15 min against password spraying, and `login` 5 attempts / 15 min keyed by `IP:email`).
+  - Registration (`POST /api/auth/register`): 3 attempts / 1 hour keyed by client IP.
+  - Resend verification (`POST /api/auth/resend-verification` and `resendVerificationAction`): 3 attempts / 15 min keyed by `IP:email`.
+  - Forgot password (`requestPasswordResetAction` and `POST /api/auth/forgot-password`): 3 attempts / 1 hour keyed by client IP.
+  - Reset password (`resetPasswordAction` and `POST /api/auth/reset-password`): 5 attempts / 15 min keyed by client IP.
+- **Architectural Security:** Extracted core logic into `src/lib/auth-core.ts` (pure library code without `"use server"`) to prevent RPC parameter tampering, and prioritized trusted proxy headers (`cf-connecting-ip`, `x-real-ip`) over `x-forwarded-for` to prevent IP spoofing.
+- **RFC-Compliant Responses & UI Feedback:** API routes return 429 Too Many Requests with `Retry-After` and `X-RateLimit-*` headers; Server Actions return user-friendly error messages, properly rendered across all 5 auth forms.
+- **Automated Verification:** `npm run test:rate-limit` (`scripts/test-rate-limit.ts`) tests IP extraction, header precedence, sliding-window quotas, HTTP 429 responses, and fail-open behavior.
+
 ---
 
 ## 3. Handy Commands
@@ -84,6 +96,7 @@ npm run test:db     # Test Neon DB connection and print all demo data
 npm run test:auth   # Run end-to-end authentication and registration test suite
 npm run test:reset  # Run password reset integration tests
 npm run test:profile # Run profile and settings integration tests
+npm run test:rate-limit # Run rate limiting integration tests
 npm run studio      # Launch Prisma Studio web GUI
 npm run db:migrate  # Run prisma migrate dev (dev schema changes)
 npm run db:deploy   # Run prisma migrate deploy (prod migrations)
@@ -108,7 +121,7 @@ npm run db:clean-users # Clean test users from DB
 
 ## 5. Logical Next Step
  
-Profile Page & Account Settings is fully complete, tested, and merged into `main`. The logical next tasks based on our UX audit are:
+Authentication & Security Hardening (GitHub OAuth, Credentials, Email Verification, Password Reset, Profile Settings, and Rate Limiting) are complete, thoroughly audited, and merged into `main`. The logical next tasks based on our roadmap are:
 1. **Scope Dashboard to Active User & Filter by Collection:** Ensure `DashboardPage` receives `session.user.id` so users see their own items rather than demo data, and wire up `?collection=...` search param to filter dashboard items with an active filter badge.
 2. **Connect Dynamic Route (`/items/[type]`):** Replace `mock-data.ts` in `/items/[type]` with live Prisma queries filtering items by system item type for the authenticated user.
 3. **Item Creation & Quick-View Flow:** Implement "New Item" and "New Collection" modals in `TopBar`, and an item details drawer with syntax-highlighted code and copy-to-clipboard.
