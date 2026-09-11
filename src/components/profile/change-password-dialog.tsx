@@ -58,6 +58,11 @@ export function ChangePasswordDialog({ isDemoUser }: ChangePasswordDialogProps =
       return;
     }
 
+    if (newPassword.length > 72) {
+      setError("New password cannot exceed 72 characters.");
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setError("New passwords do not match.");
       return;
@@ -183,6 +188,7 @@ export function ChangePasswordDialog({ isDemoUser }: ChangePasswordDialogProps =
                 type={showNewPassword ? "text" : "password"}
                 autoComplete="new-password"
                 required
+                maxLength={72}
                 placeholder="••••••••"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -203,6 +209,9 @@ export function ChangePasswordDialog({ isDemoUser }: ChangePasswordDialogProps =
                 )}
               </button>
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              Must be between 8 and 72 characters
+            </p>
           </div>
 
           {/* Confirm New Password */}
@@ -221,6 +230,7 @@ export function ChangePasswordDialog({ isDemoUser }: ChangePasswordDialogProps =
                 type={showConfirmPassword ? "text" : "password"}
                 autoComplete="new-password"
                 required
+                maxLength={72}
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

@@ -345,6 +345,10 @@ export async function changePasswordAction(
       return { success: false, error: "New password must be at least 8 characters long." };
     }
 
+    if (newPassword.length > 72) {
+      return { success: false, error: "New password cannot exceed 72 characters." };
+    }
+
     if (newPassword !== confirmPassword) {
       return { success: false, error: "New passwords do not match." };
     }
@@ -370,7 +374,10 @@ export async function changePasswordAction(
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        tokenVersion: { increment: 1 },
+      },
     });
 
     return { success: true, message: "Your password has been changed successfully." };

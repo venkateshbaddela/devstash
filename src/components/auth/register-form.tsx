@@ -55,6 +55,11 @@ export function RegisterForm() {
       return;
     }
 
+    if (password.length > 72) {
+      setErrorMessage("Password cannot exceed 72 characters.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match. Please verify.");
       return;
@@ -238,7 +243,7 @@ export function RegisterForm() {
               htmlFor="password"
               className="text-xs font-medium text-foreground/90 block"
             >
-              Password (min. 8 characters)
+              Password (8-72 characters)
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -248,6 +253,7 @@ export function RegisterForm() {
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 required
+                maxLength={72}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -286,6 +292,7 @@ export function RegisterForm() {
                 type={showConfirmPassword ? "text" : "password"}
                 autoComplete="new-password"
                 required
+                maxLength={72}
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

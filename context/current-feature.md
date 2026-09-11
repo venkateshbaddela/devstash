@@ -1,22 +1,32 @@
-# Current Feature
+# Current Feature: Auth Security Remediation
 
 ---
 
 ## Status
 
-Not Started
+Completed
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- [x] [MED-1] Unify `resend-verification` response message so verified accounts return the same generic message as non-existent accounts to eliminate user enumeration.
+- [x] [MED-2] Add maximum password length constraint ($\le 72$ characters) to `register`, `resetPasswordAction`, and `changePasswordAction` to prevent silent bcrypt truncation and DoS.
+- [x] [LOW-1] Wrap user registration and verification token creation into a single atomic `prisma.$transaction`.
+- [x] [HIGH-2] Store SHA-256 hashes of password reset tokens in `verification_tokens` table instead of raw plaintext tokens.
+- [x] [HIGH-1] Add `tokenVersion` to `User` model, increment on password change/reset, and validate inside NextAuth `jwt` callback to invalidate existing sessions.
+- [x] Verify all test suites (`test:session`, `test:atomic-reg`, `test:length`, `test:reset`, `test:profile`, `test:rate-limit`), ESLint (`npm run lint`), and build (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- **Audit Origin:** Directly addresses the remaining 5 findings from `docs/audit-results/AUTH_SECURITY_REVIEW.md` (HIGH-1, HIGH-2, MED-1, MED-2, LOW-1).
+- **Execution Strategy:** Solve step-by-step:
+  1. Input & Enumeration Hardening (MED-1, MED-2, LOW-1)
+  2. Token Hashing with SHA-256 (HIGH-2)
+  3. Session Invalidation via `tokenVersion` Prisma migration & JWT callback validation (HIGH-1)
+- **Database Branch Safety:** When applying the Prisma migration for `tokenVersion`, ensure Neon MCP operates on `devstash` project and `development` branch.
 
 ---
 
@@ -201,4 +211,14 @@ Not Started
 - Documented `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.example`.
 - Created comprehensive integration test suite `scripts/test-rate-limit.ts` (`npm run test:rate-limit`).
 - Verified 100% passing tests across all test suites (`test:rate-limit`, `test:reset`, `test:profile`), clean ESLint (`npm run lint`), and clean production build (`npm run build`).
+
+### Auth Security Remediation (2026-09-11)
+
+- Created dedicated branch `feat/auth-security-remediation` to resolve all 5 remaining findings from `docs/audit-results/AUTH_SECURITY_REVIEW.md`.
+- **[MED-1] Unified Resend Verification Response:** Hardened `src/actions/auth.ts` and `src/app/api/auth/resend-verification/route.ts` to return an identical generic HTTP 200 message regardless of whether the account does not exist, is unverified, or is already verified, completely eliminating email enumeration.
+- **[MED-2] Max Password Length Constraint ($\le 72$ chars):** Added explicit length checks and input `maxLength={72}` in `src/app/api/auth/register/route.ts`, `src/lib/auth-core.ts` (`executePasswordReset`), `src/actions/auth.ts` (`resetPasswordAction`), `src/actions/profile.ts` (`changePasswordAction`), `register-form.tsx`, `reset-password-form.tsx`, and `change-password-dialog.tsx`, preventing silent bcrypt truncation and CPU DoS attacks. Created `scripts/test-password-length.ts` (`npm run test:length`).
+- **[LOW-1] Atomic Registration & Verification Token Generation:** Updated `generateVerificationToken` in `src/lib/tokens.ts` to accept an optional transaction client `tx?: Prisma.TransactionClient`, and wrapped user creation and token creation inside `prisma.$transaction` in `src/app/api/auth/register/route.ts`. Created `scripts/test-atomic-registration.ts` (`npm run test:atomic-reg`).
+- **[HIGH-2] Password Reset Token SHA-256 Hashing:** Updated `generatePasswordResetToken`, `getPasswordResetTokenByToken`, `verifyPasswordResetToken`, and `consumePasswordResetToken` in `src/lib/tokens.ts` to compute SHA-256 hashes of reset tokens. Database `verification_tokens` table now stores exclusively 64-char hex hashes, while plaintext tokens are only sent via email. Updated `scripts/test-password-reset.ts` (`npm run test:reset`).
+- **[HIGH-1] Session Invalidation on Password Change/Reset:** Added `tokenVersion Int @default(0)` to `User` model in `prisma/schema.prisma` and applied migration `20260911101800_add_user_token_version` to Neon `development` database branch. Updated `consumePasswordResetToken` and `changePasswordAction` to increment `tokenVersion: { increment: 1 }`. Configured `jwtCallback` in `src/auth.ts` to validate `dbUser.tokenVersion === token.tokenVersion`, immediately invalidating active JWT sessions across all devices upon password change or reset. Created `scripts/test-token-version.ts` (`npm run test:session`).
+- Verified 100% passing automated test suites across all 6 test suites (`test:session`, `test:atomic-reg`, `test:length`, `test:reset`, `test:rate-limit`, `test:profile`), 0 ESLint errors/warnings (`npm run lint`), and 0 build errors (`npm run build`).
 

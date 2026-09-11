@@ -39,17 +39,11 @@ export async function resendVerificationAction(email: string) {
       where: { email: normalizedEmail },
     });
 
-    if (!user) {
+    // Return generic message if user does not exist or is already verified to prevent account enumeration
+    if (!user || user.emailVerified) {
       return {
         success: true,
         message: "If an account exists with this email, a verification link has been sent.",
-      };
-    }
-
-    if (user.emailVerified) {
-      return {
-        success: false,
-        error: "This email address is already verified. Please sign in directly.",
       };
     }
 
@@ -58,7 +52,7 @@ export async function resendVerificationAction(email: string) {
 
     return {
       success: true,
-      message: "Verification link sent. Please check your email.",
+      message: "If an account exists with this email, a verification link has been sent.",
       emailSent: mailResult.success,
     };
   } catch (err) {
@@ -127,6 +121,10 @@ export async function resetPasswordAction(
 
     if (password.length < 8) {
       return { success: false, error: "Password must be at least 8 characters long." };
+    }
+
+    if (password.length > 72) {
+      return { success: false, error: "Password cannot exceed 72 characters." };
     }
 
     if (password !== confirmPassword) {

@@ -1,25 +1,31 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 const TOKEN_EXPIRATION_HOURS = 24;
 
 /**
  * Generate and store a new verification token for an email address.
  * Deletes any existing verification tokens for this email.
+ * Optionally accepts a Prisma transaction client for atomic execution.
  */
-export async function generateVerificationToken(email: string) {
+export async function generateVerificationToken(
+  email: string,
+  tx?: Prisma.TransactionClient
+) {
+  const db = tx ?? prisma;
   const normalizedEmail = email.trim().toLowerCase();
   const token = crypto.randomUUID();
   const expires = new Date(Date.now() + TOKEN_EXPIRATION_HOURS * 60 * 60 * 1000);
 
   // Remove existing tokens for this identifier
-  await prisma.verificationToken.deleteMany({
+  await db.verificationToken.deleteMany({
     where: {
       identifier: normalizedEmail,
     },
   });
 
-  const verificationToken = await prisma.verificationToken.create({
+  const verificationToken = await db.verificationToken.create({
     data: {
       identifier: normalizedEmail,
       token,
@@ -126,13 +132,23 @@ export function extractEmailFromResetIdentifier(identifier: string): string | nu
 }
 
 /**
+ * Computes a SHA-256 hexadecimal hash of a raw token string.
+ * Used to ensure bearer reset tokens are never stored in plaintext in the database.
+ */
+export function hashToken(rawToken: string): string {
+  return crypto.createHash("sha256").update(rawToken.trim()).digest("hex");
+}
+
+/**
  * Generate and store a new password reset token for an email address.
  * Deletes any existing password reset tokens for this email.
  * Password reset tokens expire in 1 hour.
+ * Stores a SHA-256 hash in the database while returning the plaintext token for email delivery.
  */
 export async function generatePasswordResetToken(email: string) {
   const identifier = getPasswordResetIdentifier(email);
-  const token = crypto.randomUUID();
+  const rawToken = crypto.randomUUID();
+  const hashedToken = hashToken(rawToken);
   const expires = new Date(Date.now() + RESET_TOKEN_EXPIRATION_HOURS * 60 * 60 * 1000);
 
   // Remove existing reset tokens for this identifier
@@ -142,25 +158,36 @@ export async function generatePasswordResetToken(email: string) {
     },
   });
 
-  const resetToken = await prisma.verificationToken.create({
+  await prisma.verificationToken.create({
     data: {
       identifier,
-      token,
+      token: hashedToken,
       expires,
     },
   });
 
-  return resetToken;
+  // Return raw plaintext token for email dispatch
+  return {
+    token: rawToken,
+    identifier,
+    expires,
+  };
 }
 
 /**
- * Look up a password reset token record by its token string.
+ * Look up a password reset token record by its plaintext token string.
+ * Computes SHA-256 hash of the input and checks verification_tokens table.
  * Ensures the token belongs to the password-reset namespace.
  */
 export async function getPasswordResetTokenByToken(token: string) {
   try {
+    if (!token || typeof token !== "string") {
+      return null;
+    }
+
+    const hashedToken = hashToken(token);
     const tokenRecord = await prisma.verificationToken.findUnique({
-      where: { token },
+      where: { token: hashedToken },
     });
 
     if (!tokenRecord || !tokenRecord.identifier.startsWith(PASSWORD_RESET_PREFIX)) {
@@ -194,7 +221,7 @@ export async function verifyPasswordResetToken(
   if (hasExpired) {
     await prisma.verificationToken
       .delete({
-        where: { token },
+        where: { token: tokenRecord.token },
       })
       .catch(() => null);
     return { success: false, error: "TOKEN_EXPIRED" };
@@ -238,7 +265,7 @@ export async function consumePasswordResetToken(
   if (hasExpired) {
     await prisma.verificationToken
       .delete({
-        where: { token },
+        where: { token: tokenRecord.token },
       })
       .catch(() => null);
     return { success: false, error: "TOKEN_EXPIRED" };
@@ -263,12 +290,13 @@ export async function consumePasswordResetToken(
       where: { id: existingUser.id },
       data: {
         password: newPasswordHash,
+        tokenVersion: { increment: 1 },
         // Proving ownership of email via reset token can also mark email as verified
         ...(!existingUser.emailVerified ? { emailVerified: new Date() } : {}),
       },
     }),
     prisma.verificationToken.delete({
-      where: { token },
+      where: { token: tokenRecord.token },
     }),
   ]);
 

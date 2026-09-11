@@ -64,6 +64,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (password.length > 72) {
+      return NextResponse.json(
+        { error: "Password cannot exceed 72 characters" },
+        { status: 400 }
+      );
+    }
+
     // Validate password confirmation
     if (password !== confirmPassword) {
       return NextResponse.json(
@@ -87,32 +94,43 @@ export async function POST(request: Request) {
     // Hash password with bcryptjs
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user in database
-    const user = await prisma.user.create({
-      data: {
-        name: name.trim(),
-        email: normalizedEmail,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        createdAt: true,
-      },
+    // Atomically create user and verification token in database
+    const { user, verificationToken } = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          name: name.trim(),
+          email: normalizedEmail,
+          password: hashedPassword,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+        },
+      });
+
+      const token = await generateVerificationToken(normalizedEmail, tx);
+
+      return { user: createdUser, verificationToken: token };
     });
 
-    // Generate email verification token
-    const verificationToken = await generateVerificationToken(normalizedEmail);
-
     // Send verification email via Resend
-    const mailResult = await sendVerificationEmail(normalizedEmail, verificationToken.token);
+    let emailSent = false;
+    try {
+      const mailResult = await sendVerificationEmail(normalizedEmail, verificationToken.token);
+      emailSent = mailResult.success;
+    } catch (mailError) {
+      console.error("Failed to send verification email:", mailError);
+    }
 
     return NextResponse.json(
       {
-        message: "Registration successful! A verification email has been sent.",
+        message: emailSent
+          ? "Registration successful! A verification email has been sent."
+          : "Registration successful! However, we could not send the verification email immediately. Please request a new link if you do not receive it.",
         requiresVerification: true,
-        emailSent: mailResult.success,
+        emailSent,
         user: {
           id: user.id,
           name: user.name,

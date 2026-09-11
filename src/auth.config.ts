@@ -24,12 +24,14 @@ export const authConfig = {
     jwt({ token, user }) {
       if (user?.id) {
         token.id = user.id;
+        token.tokenVersion = user.tokenVersion ?? 0;
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id ?? token.sub ?? "";
+        session.user.id = (token.id ?? token.sub ?? "") as string;
+        session.user.tokenVersion = typeof token.tokenVersion === "number" ? token.tokenVersion : 0;
       }
       return session;
     },

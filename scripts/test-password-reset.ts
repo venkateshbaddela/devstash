@@ -7,6 +7,7 @@ import {
   getPasswordResetTokenByToken,
   verifyPasswordResetToken,
   generateVerificationToken,
+  hashToken,
 } from "../src/lib/tokens";
 import {
   requestPasswordResetAction,
@@ -57,16 +58,31 @@ async function main() {
     console.log(`   ✅ Test user created: ${user.email} (ID: ${user.id})`);
 
     // -------------------------------------------------------------------------
-    // Test 2: Token Generation & Isolation
+    // Test 2: Token Generation, SHA-256 Hashing & Isolation
     // -------------------------------------------------------------------------
-    console.log("\n2. Testing token generation and namespace isolation...");
+    console.log("\n2. Testing token generation, SHA-256 hashing, and namespace isolation...");
     const resetRecord = await generatePasswordResetToken(testEmail);
-    console.log(`   Generated reset token: ${resetRecord.token}`);
+    console.log(`   Generated raw reset token: ${resetRecord.token}`);
     console.log(`   Reset token identifier: ${resetRecord.identifier}`);
 
     if (!resetRecord.identifier.startsWith("password-reset:")) {
       throw new Error(`Expected identifier to start with 'password-reset:', got: ${resetRecord.identifier}`);
     }
+
+    // Verify DB stores SHA-256 hash, NOT the raw token
+    const dbRecord = await prisma.verificationToken.findFirst({
+      where: { identifier: resetRecord.identifier },
+    });
+    if (!dbRecord) {
+      throw new Error("Reset token record not found in database");
+    }
+    if (dbRecord.token === resetRecord.token) {
+      throw new Error("Security flaw: Reset token is stored in plaintext!");
+    }
+    if (dbRecord.token !== hashToken(resetRecord.token)) {
+      throw new Error("Security flaw: DB token does not match SHA-256 hash of raw token!");
+    }
+    console.log(`   ✅ DB token is securely hashed with SHA-256: ${dbRecord.token}`);
 
     // Password reset helper getPasswordResetTokenByToken enforces namespace check:
     const asPasswordReset = await getPasswordResetTokenByToken(resetRecord.token);
@@ -101,14 +117,15 @@ async function main() {
     console.log("   ✅ Non-existent token rejected.");
 
     // Expired token
-    const expiredRecord = await prisma.verificationToken.create({
+    const expiredRawToken = "expired-test-token-12345";
+    await prisma.verificationToken.create({
       data: {
         identifier: `password-reset:${testEmail}`,
-        token: "expired-test-token-12345",
+        token: hashToken(expiredRawToken),
         expires: new Date(Date.now() - 60000), // 1 minute in the past
       },
     });
-    const verifyExpired = await verifyPasswordResetToken(expiredRecord.token);
+    const verifyExpired = await verifyPasswordResetToken(expiredRawToken);
     if (verifyExpired.success || (!verifyExpired.success && verifyExpired.error !== "TOKEN_EXPIRED")) {
       throw new Error(`Expected TOKEN_EXPIRED error, got: ${JSON.stringify(verifyExpired)}`);
     }
@@ -147,21 +164,35 @@ async function main() {
     if (!activeResetRecord) {
       throw new Error("No reset token found in database after requestPasswordResetAction");
     }
-    console.log(`   Active token created in DB: ${activeResetRecord.token}`);
+    console.log(`   Active token created in DB (hashed): ${activeResetRecord.token}`);
+    if (activeResetRecord.token.length !== 64) {
+      throw new Error(`Expected SHA-256 hex string (64 chars), got length ${activeResetRecord.token.length}`);
+    }
+
+    // Attacker simulation: DB hash cannot be used directly as reset token
+    const dbHashAttackRes = await resetPasswordAction(activeResetRecord.token, "attackPass123!", "attackPass123!");
+    if (dbHashAttackRes.success) {
+      throw new Error("Critical security flaw: DB hash was accepted as reset token!");
+    }
+    console.log("   ✅ Attacker simulation: DB hash cannot be used as reset token.");
+
+    // Generate a known raw token for testing valid reset execution
+    const validReset = await generatePasswordResetToken(testEmail);
+    const validRawToken = validReset.token;
 
     // -------------------------------------------------------------------------
     // Test 5: Server Action - resetPasswordAction
     // -------------------------------------------------------------------------
     console.log("\n5. Testing resetPasswordAction...");
     // 5a. Password mismatch
-    const mismatchRes = await resetPasswordAction(activeResetRecord.token, "passOne123", "passTwo123");
+    const mismatchRes = await resetPasswordAction(validRawToken, "passOne123", "passTwo123");
     if (mismatchRes.success) {
       throw new Error("Expected mismatched passwords to fail");
     }
     console.log("   ✅ Password mismatch rejected.");
 
     // 5b. Short password (<8 chars)
-    const shortRes = await resetPasswordAction(activeResetRecord.token, "short", "short");
+    const shortRes = await resetPasswordAction(validRawToken, "short", "short");
     if (shortRes.success) {
       throw new Error("Expected short password to fail");
     }
@@ -169,7 +200,7 @@ async function main() {
 
     // 5c. Valid reset execution
     const resetSuccessRes = await resetPasswordAction(
-      activeResetRecord.token,
+      validRawToken,
       newPassword,
       newPassword
     );
@@ -184,7 +215,7 @@ async function main() {
     console.log("\n6. Verifying database state post-reset...");
     // 6a. Token should be deleted (consumed)
     const consumedTokenCheck = await prisma.verificationToken.findUnique({
-      where: { token: activeResetRecord.token },
+      where: { token: hashToken(validRawToken) },
     });
     if (consumedTokenCheck !== null) {
       throw new Error("Token was not deleted upon consumption!");
@@ -193,7 +224,7 @@ async function main() {
 
     // 6b. Replaying the token should fail
     const replayRes = await resetPasswordAction(
-      activeResetRecord.token,
+      validRawToken,
       "anotherPassword123!",
       "anotherPassword123!"
     );

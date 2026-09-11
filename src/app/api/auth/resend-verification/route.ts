@@ -46,18 +46,11 @@ export async function POST(request: Request) {
       where: { email: normalizedEmail },
     });
 
-    // If user does not exist, return a generic message to prevent account enumeration
-    if (!user) {
+    // Return generic message if user does not exist or is already verified to prevent account enumeration
+    if (!user || user.emailVerified) {
       return NextResponse.json(
         { message: "If an account exists with this email, a verification link has been sent." },
         { status: 200 }
-      );
-    }
-
-    if (user.emailVerified) {
-      return NextResponse.json(
-        { error: "This email is already verified. Please sign in directly." },
-        { status: 400 }
       );
     }
 
@@ -71,7 +64,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: "A new verification link has been sent to your email.",
+        message: "If an account exists with this email, a verification link has been sent.",
         emailSent: mailResult.success,
       },
       { status: 200 }

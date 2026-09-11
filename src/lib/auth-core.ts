@@ -70,6 +70,10 @@ export async function executePasswordReset(
       return { success: false, error: "Password must be at least 8 characters long." };
     }
 
+    if (password.length > 72) {
+      return { success: false, error: "Password cannot exceed 72 characters." };
+    }
+
     if (password !== confirmPassword) {
       return { success: false, error: "Passwords do not match." };
     }

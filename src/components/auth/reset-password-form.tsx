@@ -35,6 +35,11 @@ export function ResetPasswordForm({ token, email }: ResetPasswordFormProps) {
       return;
     }
 
+    if (password.length > 72) {
+      setError("Password cannot exceed 72 characters.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -93,6 +98,7 @@ export function ResetPasswordForm({ token, email }: ResetPasswordFormProps) {
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
               required
+              maxLength={72}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -114,7 +120,7 @@ export function ResetPasswordForm({ token, email }: ResetPasswordFormProps) {
             </button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Must be at least 8 characters
+            Must be between 8 and 72 characters
           </p>
         </div>
 
@@ -134,6 +140,7 @@ export function ResetPasswordForm({ token, email }: ResetPasswordFormProps) {
               type={showConfirmPassword ? "text" : "password"}
               autoComplete="new-password"
               required
+              maxLength={72}
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
