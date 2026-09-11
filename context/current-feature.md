@@ -1,32 +1,22 @@
-# Current Feature: Auth Security Remediation
+# Current Feature
 
 ---
 
 ## Status
 
-Completed
+Not Started
 
 ---
 
 ## Goals
 
-- [x] [MED-1] Unify `resend-verification` response message so verified accounts return the same generic message as non-existent accounts to eliminate user enumeration.
-- [x] [MED-2] Add maximum password length constraint ($\le 72$ characters) to `register`, `resetPasswordAction`, and `changePasswordAction` to prevent silent bcrypt truncation and DoS.
-- [x] [LOW-1] Wrap user registration and verification token creation into a single atomic `prisma.$transaction`.
-- [x] [HIGH-2] Store SHA-256 hashes of password reset tokens in `verification_tokens` table instead of raw plaintext tokens.
-- [x] [HIGH-1] Add `tokenVersion` to `User` model, increment on password change/reset, and validate inside NextAuth `jwt` callback to invalidate existing sessions.
-- [x] Verify all test suites (`test:session`, `test:atomic-reg`, `test:length`, `test:reset`, `test:profile`, `test:rate-limit`), ESLint (`npm run lint`), and build (`npm run build`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- **Audit Origin:** Directly addresses the remaining 5 findings from `docs/audit-results/AUTH_SECURITY_REVIEW.md` (HIGH-1, HIGH-2, MED-1, MED-2, LOW-1).
-- **Execution Strategy:** Solve step-by-step:
-  1. Input & Enumeration Hardening (MED-1, MED-2, LOW-1)
-  2. Token Hashing with SHA-256 (HIGH-2)
-  3. Session Invalidation via `tokenVersion` Prisma migration & JWT callback validation (HIGH-1)
-- **Database Branch Safety:** When applying the Prisma migration for `tokenVersion`, ensure Neon MCP operates on `devstash` project and `development` branch.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
