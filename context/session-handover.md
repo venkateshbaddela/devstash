@@ -7,7 +7,7 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `chore: reset current-feature.md after completing auth-security-remediation`
+- **Last Commit:** `docs(items): add item types documentation and unified CRUD architecture specification`
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including `tokenVersion` column on `users` table).
 
@@ -92,6 +92,10 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
   - `npm run test:session` (`scripts/test-token-version.ts`) tests token version invalidation.
   - `npm run test:atomic-reg` (`scripts/test-atomic-registration.ts`) tests atomic registration rollbacks.
   - `npm run test:length` (`scripts/test-password-length.ts`) tests 72-char bcrypt boundary constraints.
+
+### I. Item Types & CRUD System Specifications
+- **Item Types Documentation (`docs/item-types.md`):** Complete reference covering all 7 system item types (`snippet`, `prompt`, `command`, `note`, `file`, `image`, `link`), their visual accents (Lucide icons and hex colors), storage classification (`ContentType.TEXT`, `ContentType.FILE`, `ContentType.URL`), shared attributes, relational models, and tier gating.
+- **Item CRUD Architecture (`docs/item-crud-architecture.md`):** System blueprint for unified item mutations in `src/actions/items.ts`, direct Prisma queries in `src/lib/db/items.ts`, unified dynamic routing at `/items/[type]`, and polymorphic UI adapters (`ItemForm`, `ItemContentRenderer`, `ItemDrawer`).
 
 ---
 

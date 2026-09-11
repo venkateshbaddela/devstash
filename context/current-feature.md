@@ -212,3 +212,15 @@ Not Started
 - **[HIGH-1] Session Invalidation on Password Change/Reset:** Added `tokenVersion Int @default(0)` to `User` model in `prisma/schema.prisma` and applied migration `20260911101800_add_user_token_version` to Neon `development` database branch. Updated `consumePasswordResetToken` and `changePasswordAction` to increment `tokenVersion: { increment: 1 }`. Configured `jwtCallback` in `src/auth.ts` to validate `dbUser.tokenVersion === token.tokenVersion`, immediately invalidating active JWT sessions across all devices upon password change or reset. Created `scripts/test-token-version.ts` (`npm run test:session`).
 - Verified 100% passing automated test suites across all 6 test suites (`test:session`, `test:atomic-reg`, `test:length`, `test:reset`, `test:rate-limit`, `test:profile`), 0 ESLint errors/warnings (`npm run lint`), and 0 build errors (`npm run build`).
 
+### Item Types & CRUD Architecture Research (2026-09-11)
+
+- Executed research skill tasks `item-types-research` and `item-crud-research` based on specifications in `context/research/`.
+- Created comprehensive technical documentation in `docs/item-types.md` detailing all 7 system item types (`snippet`, `prompt`, `command`, `note`, `file`, `image`, `link`), visual properties (Lucide icons and hex colors), storage classification (`ContentType.TEXT`, `ContentType.FILE`, `ContentType.URL`), shared properties, display behaviors, and plan entitlements.
+- Created architectural design specification in `docs/item-crud-architecture.md` defining a unified polymorphic CRUD system for all 7 item types:
+  - Single Server Action file (`src/actions/items.ts`) for unified mutations (`createItemAction`, `updateItemAction`, `deleteItemAction`, status toggles) enforcing transactional relation management and cache revalidation.
+  - Direct database read queries (`src/lib/db/items.ts`) called directly from React Server Components.
+  - Unified dynamic route handler (`src/app/(app)/items/[type]/page.tsx`) with Next.js 16 Promise params resolution and slug normalization.
+  - Polymorphic UI architecture keeping type-specific presentation logic in components (`ItemContentRenderer`, `ItemForm`, `ItemDrawer`) rather than server actions.
+- Verified cleanly against ESLint (`npm run lint`) and production build (`npm run build`).
+
+
