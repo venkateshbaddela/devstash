@@ -1,5 +1,6 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
+import { Redis } from "@upstash/redis";
 import { prisma } from "../src/lib/prisma";
 import {
   generatePasswordResetToken,
@@ -12,8 +13,26 @@ import {
   resetPasswordAction,
 } from "../src/actions/auth";
 
+async function clearRateLimitKeys() {
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    try {
+      const redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      });
+      const keys = await redis.keys("ratelimit:auth:*127.0.0.1*");
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    } catch {
+      // Ignore cleanup error
+    }
+  }
+}
+
 async function main() {
   console.log("🔐 Starting Password Reset Integration Tests...\n");
+  await clearRateLimitKeys();
 
   const testEmail = `reset_test_${Date.now()}@devstash.io`;
   const initialPassword = "initialPassword123!";
@@ -227,6 +246,7 @@ async function main() {
         where: { id: testUserId },
       }).catch(() => null);
     }
+    await clearRateLimitKeys();
     console.log("✅ Cleanup complete.");
   }
 }

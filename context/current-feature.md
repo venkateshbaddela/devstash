@@ -1,22 +1,42 @@
-# Current Feature
+# Current Feature: Rate Limiting for Auth
 
 ---
 
 ## Status
 
-Not Started
+Complete
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- [x] Install `@upstash/ratelimit` and `@upstash/redis` dependencies.
+- [x] Create reusable rate limiting utility in `src/lib/rate-limit.ts` using Upstash Redis with sliding window algorithm.
+- [x] Implement client IP extraction helper supporting `x-forwarded-for`, `x-real-ip`, and request headers.
+- [x] Support fail-open behavior so requests are allowed if Upstash Redis credentials are not configured or if the service is unreachable.
+- [x] Protect registration (`/api/auth/register`): 3 attempts per 1 hour keyed by IP.
+- [x] Protect email verification resend (`/api/auth/resend-verification` and `resendVerificationAction`): 3 attempts per 15 min keyed by IP + email.
+- [x] Protect forgot password requests (`requestPasswordResetAction`): 3 attempts per 1 hour keyed by IP.
+- [x] Protect password reset completion (`resetPasswordAction`): 5 attempts per 15 min keyed by IP.
+- [x] Protect credentials login (`authorize` in `src/auth.ts` / credentials callback): 5 attempts per 15 min keyed by IP + email and 30 attempts per 15 min keyed by IP.
+- [x] Return 429 status code with `{ error: "Too many attempts. Please try again in X minutes." }` and `Retry-After` header on API routes, and user-friendly error messages from Server Actions.
+- [x] Ensure frontend forms (Sign In, Register, Forgot Password, Reset Password, Resend Verification) properly display rate limit feedback to the user.
+- [x] Document `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.example`.
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- **Endpoints & Limits**:
+  - Credentials login: 5 attempts / 15 min (Key: IP + email)
+  - Register: 3 attempts / 1 hour (Key: IP)
+  - Forgot password: 3 attempts / 1 hour (Key: IP)
+  - Reset password: 5 attempts / 15 min (Key: IP)
+  - Resend verification: 3 attempts / 15 min (Key: IP + email)
+- **Algorithm**: Sliding window counter via `@upstash/ratelimit`.
+- **Fail-Open Strategy**: Rate limiter must gracefully catch Redis errors or missing environment variables to prevent locking out users in local development or during Upstash outages.
+- **NextAuth Integration**: For Credentials login, check limits inside `authorize()` or route handler using headers (`headers()` from `next/headers`).
+- **Audit Correlation**: Directly resolves `[HIGH-3]` from `docs/audit-results/AUTH_SECURITY_REVIEW.md`.
 
 ---
 

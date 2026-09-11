@@ -1,15 +1,14 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { generateVerificationToken, verifyToken } from "@/lib/tokens";
+import { sendVerificationEmail } from "@/lib/mail";
+import { getClientIp, checkRateLimit } from "@/lib/rate-limit";
 import {
-  generateVerificationToken,
-  verifyToken,
-  generatePasswordResetToken,
-  consumePasswordResetToken,
-} from "@/lib/tokens";
-import { sendVerificationEmail, sendPasswordResetEmail } from "@/lib/mail";
+  executePasswordResetRequest,
+  executePasswordReset,
+} from "@/lib/auth-core";
 
 export async function signOutAction() {
   await signOut({ redirectTo: "/sign-in" });
@@ -17,7 +16,25 @@ export async function signOutAction() {
 
 export async function resendVerificationAction(email: string) {
   try {
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = email?.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return { success: false, error: "Please enter your email address." };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return { success: false, error: "Please enter a valid email address." };
+    }
+
+    const clientIp = await getClientIp();
+    const rateLimit = await checkRateLimit(
+      "resend-verification",
+      `${clientIp}:${normalizedEmail}`
+    );
+    if (!rateLimit.success) {
+      return { success: false, error: rateLimit.errorMessage };
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
@@ -81,26 +98,13 @@ export async function requestPasswordResetAction(email: string) {
       return { success: false, error: "Please enter a valid email address." };
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: trimmedEmail },
-    });
-
-    // Generic response to prevent email enumeration
-    if (!user || !user.email) {
-      return {
-        success: true,
-        message: "If an account exists with this email, a password reset link has been sent.",
-      };
+    const clientIp = await getClientIp();
+    const rateLimit = await checkRateLimit("forgot-password", clientIp);
+    if (!rateLimit.success) {
+      return { success: false, error: rateLimit.errorMessage };
     }
 
-    const token = await generatePasswordResetToken(user.email);
-    const mailResult = await sendPasswordResetEmail(user.email, token.token);
-
-    return {
-      success: true,
-      message: "If an account exists with this email, a password reset link has been sent.",
-      emailSent: mailResult.success,
-    };
+    return await executePasswordResetRequest(trimmedEmail);
   } catch (err) {
     console.error("requestPasswordResetAction error:", err);
     return { success: false, error: "Failed to process password reset request." };
@@ -129,26 +133,19 @@ export async function resetPasswordAction(
       return { success: false, error: "Passwords do not match." };
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const result = await consumePasswordResetToken(token.trim(), hashedPassword);
-
-    if (!result.success) {
-      if (result.error === "TOKEN_EXPIRED") {
-        return {
-          success: false,
-          error: "This password reset link has expired. Please request a new one.",
-        };
-      }
-      return {
-        success: false,
-        error: "This password reset link is invalid or has already been used.",
-      };
+    const clientIp = await getClientIp();
+    const rateLimit = await checkRateLimit("reset-password", clientIp);
+    if (!rateLimit.success) {
+      return { success: false, error: rateLimit.errorMessage };
     }
 
-    return { success: true, email: result.email };
+    return await executePasswordReset(token, password, confirmPassword);
   } catch (err) {
     console.error("resetPasswordAction error:", err);
-    return { success: false, error: "An unexpected error occurred while resetting your password." };
+    return {
+      success: false,
+      error: "An unexpected error occurred while resetting your password.",
+    };
   }
 }
 

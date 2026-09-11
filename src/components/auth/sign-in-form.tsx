@@ -45,6 +45,9 @@ export function SignInForm() {
       return "This GitHub account is already associated with another account, or you are already logged in as a different user. Please sign out first before connecting this GitHub account.";
     }
     if (urlError === "CredentialsSignin") {
+      if (errorCode === "rate_limited") {
+        return "Too many sign-in attempts. Please try again in 15 minutes.";
+      }
       if (errorCode === "email_not_verified") {
         return "Your email address is not verified yet. Please check your email for the verification link.";
       }
@@ -88,11 +91,20 @@ export function SignInForm() {
       });
 
       if (!res || res.error) {
+        const isRateLimited =
+          (res as { code?: string })?.code === "rate_limited" ||
+          res?.error?.includes("rate_limited") ||
+          res?.url?.includes("code=rate_limited");
+
         const isEmailNotVerified =
           (res as { code?: string })?.code === "email_not_verified" ||
-          res?.error?.includes("email_not_verified");
+          res?.error?.includes("email_not_verified") ||
+          res?.url?.includes("code=email_not_verified");
 
-        if (isEmailNotVerified) {
+        if (isRateLimited) {
+          setIsUnverified(false);
+          setFormError("Too many sign-in attempts. Please try again in 15 minutes.");
+        } else if (isEmailNotVerified) {
           setIsUnverified(true);
           setFormError("Your email address is not verified yet. Please check your inbox for the verification link.");
         } else {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateVerificationToken } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/lib/mail";
+import { getClientIp, checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
@@ -30,6 +31,15 @@ export async function POST(request: Request) {
         { error: "Invalid email address" },
         { status: 400 }
       );
+    }
+
+    const clientIp = await getClientIp(request);
+    const rateLimit = await checkRateLimit(
+      "resend-verification",
+      `${clientIp}:${normalizedEmail}`
+    );
+    if (!rateLimit.success) {
+      return rateLimitResponse(rateLimit);
     }
 
     const user = await prisma.user.findUnique({
