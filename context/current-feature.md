@@ -1,4 +1,4 @@
-# Current Feature: Vitest Unit Testing Setup
+# Current Feature: Responsive Three-Column Item Grid
 
 ---
 
@@ -10,21 +10,21 @@ In Progress
 
 ## Goals
 
-- [x] Install `vitest` as a dev dependency.
-- [x] Create `vitest.config.mts` configured for Node.js environment, alias resolution (`@/*`, `~/*`), and targeted strictly at server actions and utilities (excluding components).
-- [x] Add `test`, `test:unit`, and `test:watch` scripts to `package.json`.
-- [x] Implement initial unit tests for utilities (`src/lib/rate-limit.ts`, `src/lib/auth-core.ts`, `src/lib/icons.tsx`, `src/lib/db/items.ts`) and server actions (`src/actions/auth.ts`, `src/actions/profile.ts`).
-- [x] Update workflow documentation in `context/ai-interaction.md` reflecting mandatory unit tests for server actions and utilities before committing.
-- [x] Update testing standards in `context/coding-standards.md`, `context/session-handover.md`, and `AGENTS.md`.
-- [x] Verify `npm test` runs with 100% passing tests, ESLint passes (`npm run lint`), and Next.js builds cleanly (`npm run build`).
+- [x] Update responsive grid layout in `src/app/(app)/items/[type]/page.tsx` from 2 columns (`md:grid-cols-2`) to 3 columns on larger screens (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4`).
+- [x] Ensure `ItemCard` component styling, badge pills, tags, accent borders, and dates adapt cleanly in the 3-column layout without clipping or layout breakage.
+- [x] Verify responsive breakpoints across mobile (1 column), tablet/medium screens (2 columns), and desktop/large screens (3 columns).
+- [x] Run unit tests (`npm test`) and items test suite (`npm run test:items`) to ensure no regressions.
+- [x] Verify ESLint (`npm run lint`) and Next.js production build (`npm run build`) pass with 0 errors.
 
 ---
 
 ## Notes
 
-- Scope constraint: Unit tests must focus exclusively on Server Actions (`src/actions/`) and utilities/helpers (`src/lib/`). Do not write tests for React components (`*.tsx`).
-- Node.js test environment (`environment: 'node'`) without unnecessary DOM dependencies.
-- Match Next.js tsconfig path aliases (`@/` and `~/`).
+- User prompt: "make item listings in when a type is clicked on side to three row instead of two rows on larger screens".
+- Route: `src/app/(app)/items/[type]/page.tsx`.
+- Component: `src/components/dashboard/item-card.tsx`.
+- Breakpoints: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` (with responsive gaps `gap-3.5 sm:gap-4`).
+- Preserves all existing functionality: empty states, metadata, Lucide icons, PRO badge indicators, session scoping.
 
 ---
 
