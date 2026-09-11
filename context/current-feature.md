@@ -1,32 +1,22 @@
-# Current Feature: Items List View
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- [x] Connect dynamic route `/items/[type]` to live database queries via Prisma in `src/lib/db/items.ts` (replacing `src/lib/mock-data.ts`).
-- [x] Support slug normalization for singular and plural type routes (e.g., `/items/snippets` and `/items/snippet`, `/items/notes` and `/items/note`).
-- [x] Scope item queries to the active authenticated user session (with fallback to default user).
-- [x] Display a responsive grid of `ItemCard` components (single column on mobile, two columns on medium and up: `grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4`).
-- [x] Ensure item cards display left border accent matching item type color, type icons, tags, favorite stars, and pin indicators.
-- [x] Render breadcrumbs (`Dashboard > [Item Type]`), page title, item counter, and polished empty state when no items exist for the type.
-- [x] Verify 0 ESLint errors/warnings (`npm run lint`) and clean production build (`npm run build`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- Spec file: `context/features/item-list-view-spec.md`
-- Architecture reference: `docs/item-crud-architecture.md` and `docs/item-types.md`
-- Next.js 16 App Router requires awaiting params (`const { type } = await params`).
-- Query helper `getItemsByType` in `src/lib/db/items.ts` should fetch items by matching `itemType.name` or `itemType.id`, returning mapped `DashboardItem` objects.
-- Two-column responsive layout on `md:` breakpoints per spec.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -233,4 +223,15 @@ In Progress
   - Polymorphic UI architecture keeping type-specific presentation logic in components (`ItemContentRenderer`, `ItemForm`, `ItemDrawer`) rather than server actions.
 - Verified cleanly against ESLint (`npm run lint`) and production build (`npm run build`).
 
+### Items List View (2026-09-11)
 
+- Replaced static mock data (`src/lib/mock-data.ts`) on dynamic route `/items/[type]` with live PostgreSQL queries via Prisma.
+- Implemented `resolveItemTypeBySlug` and `getItemsByType` in `src/lib/db/items.ts` with React `cache()` deduplication.
+- Supported slug normalization handling both singular and plural type routes (e.g., `/items/snippets` and `/items/snippet`, `/items/notes` and `/items/note`).
+- Scoped item queries to active authenticated user session (`auth()`) with fallback to default demo user.
+- Created boundary-safe `<ItemTypeIcon />` component and icon resolution helper in `src/lib/icons.tsx` resolving RSC boundary serialization (`Element type is invalid`) and React Compiler static component lint rules.
+- Rendered responsive 2-column grid (`grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4`) of `ItemCard` components, displaying type color left accent borders, Lucide type icons, tags, favorite stars, and pin indicators.
+- Added type header with Lucide icon, type name, description, PRO badge indicator, item counter, breadcrumbs navigation (`Dashboard > [Item Type]`), and polished empty state when no items exist.
+- Implemented dynamic Next.js metadata generation (`generateMetadata`) using Next.js 16 asynchronous `params` (`await params`).
+- Created automated integration test suite in `scripts/test-item-list-view.ts` (`npm run test:items`) with 47/47 passing assertions.
+- Verified cleanly against ESLint (`npm run lint`), automated tests (`npm run test:items`), and production build (`npm run build`).

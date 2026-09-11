@@ -7,7 +7,7 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `docs(items): add item types documentation and unified CRUD architecture specification`
+- **Last Commit:** `feat(items): implement dynamic items list view with live database queries`
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including `tokenVersion` column on `users` table).
 
@@ -97,6 +97,15 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 - **Item Types Documentation (`docs/item-types.md`):** Complete reference covering all 7 system item types (`snippet`, `prompt`, `command`, `note`, `file`, `image`, `link`), their visual accents (Lucide icons and hex colors), storage classification (`ContentType.TEXT`, `ContentType.FILE`, `ContentType.URL`), shared attributes, relational models, and tier gating.
 - **Item CRUD Architecture (`docs/item-crud-architecture.md`):** System blueprint for unified item mutations in `src/actions/items.ts`, direct Prisma queries in `src/lib/db/items.ts`, unified dynamic routing at `/items/[type]`, and polymorphic UI adapters (`ItemForm`, `ItemContentRenderer`, `ItemDrawer`).
 
+### J. Dynamic Items List View (`/items/[type]`)
+- **Live Database Connection:** Replaced static mock data in `/items/[type]` with live PostgreSQL queries via Prisma (`src/lib/db/items.ts`).
+- **Slug Normalization:** `resolveItemTypeBySlug` transparently normalizes both singular and plural type routes (e.g., `/items/snippets` and `/items/snippet`, `/items/notes` and `/items/note`) with React `cache()` memoization.
+- **User Scoping:** Scopes queries to active authenticated user session (`auth()`) with fallback to default demo user.
+- **RSC Boundary Safety:** Centralized dynamic Lucide icon rendering in `src/lib/icons.tsx` (`<ItemTypeIcon />`), eliminating RSC boundary serialization errors (`Element type is invalid`) and adhering to React Compiler static component rules.
+- **Responsive 2-Column Grid:** Displays `ItemCard` grid (`grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4`) with type-matched left accent borders, tags, pin indicators, and favorite stars.
+- **Header & Breadcrumbs:** Displays breadcrumb navigation (`Dashboard > [Item Type]`), page title, description, PRO badge, item counter, and polished empty state when no items exist.
+- **Next.js 16 Compatibility:** Dynamic `generateMetadata` and page component resolve asynchronous route params via `await params`.
+
 ---
 
 ## 3. Handy Commands
@@ -113,6 +122,7 @@ npm run test:rate-limit # Run rate limiting integration tests
 npm run test:session # Run session invalidation token version tests
 npm run test:atomic-reg # Run atomic registration transaction tests
 npm run test:length  # Run password length constraint tests
+npm run test:items   # Run items list view integration tests
 npm run studio      # Launch Prisma Studio web GUI
 npm run db:migrate  # Run prisma migrate dev (dev schema changes)
 npm run db:deploy   # Run prisma migrate deploy (prod migrations)
@@ -137,7 +147,7 @@ npm run db:clean-users # Clean test users from DB
 
 ## 5. Logical Next Step
  
-Authentication & Security Hardening (GitHub OAuth, Credentials, Email Verification, Password Reset, Profile Settings, and Rate Limiting) are complete, thoroughly audited, and merged into `main`. The logical next tasks based on our roadmap are:
+Dynamic Items List View (`/items/[type]`) and Auth Infrastructure are complete, thoroughly tested, and merged into `main`. The logical next tasks based on our roadmap are:
 1. **Scope Dashboard to Active User & Filter by Collection:** Ensure `DashboardPage` receives `session.user.id` so users see their own items rather than demo data, and wire up `?collection=...` search param to filter dashboard items with an active filter badge.
-2. **Connect Dynamic Route (`/items/[type]`):** Replace `mock-data.ts` in `/items/[type]` with live Prisma queries filtering items by system item type for the authenticated user.
-3. **Item Creation & Quick-View Flow:** Implement "New Item" and "New Collection" modals in `TopBar`, and an item details drawer with syntax-highlighted code and copy-to-clipboard.
+2. **Item Creation & Quick-View Flow:** Implement "New Item" and "New Collection" modals in `TopBar`, and an item details drawer with syntax-highlighted code and copy-to-clipboard.
+3. **Item CRUD Server Actions & Modals:** Implement edit and delete actions in `src/actions/items.ts` with optimistic UI updates and toast feedback.
