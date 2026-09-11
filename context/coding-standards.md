@@ -97,3 +97,16 @@ Example v4 configuration:
 - No commented-out code unless specified
 - No unused imports or variables
 - Keep functions under 50 lines when possible
+
+## Unit Testing
+
+- **Framework:** Vitest with Node.js environment (`vitest.config.mts`)
+- **Target Scope:** Server Actions (`src/actions/`) and utilities/helpers (`src/lib/`) only
+- **Components:** DO NOT write unit tests for React components (`*.tsx`). Components and UI flows are tested via browser / E2E.
+- **Organization:** Store tests in `tests/unit/actions/` and `tests/unit/lib/`
+- **Typing:** Strict TypeScript typing; no `any` types; strictly type mock return values
+- **Mocking:** Use `vi.mock()` for external boundaries (database, NextAuth session, email service, rate limiter)
+- **Coverage Areas:**
+  - Input validation & edge cases (empty strings, format checks, length limits)
+  - Security checks (session authentication, demo user safeguards, enumeration defense)
+  - Response contract: Verify `{ success, data, error, message }` shape

@@ -33,6 +33,7 @@ Read te following to get the full context of te project:
 - **Language:** TypeScript 5 (Strict mode)
 - **Styling:** Tailwind CSS v4 (`@tailwindcss/postcss`, `@import "tailwindcss";`)
 - **Linting:** ESLint 9 (`eslint-config-next`)
+- **Testing:** Vitest (Unit testing for Server Actions and utilities)
 - **Package Manager:** npm
 
 ---
@@ -53,6 +54,12 @@ npm run start
 
 # Run ESLint check
 npm run lint
+
+# Run unit tests (Vitest)
+npm test
+
+# Run unit tests in watch mode
+npm run test:watch
 ```
 
 ---

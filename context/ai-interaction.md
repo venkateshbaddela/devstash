@@ -15,15 +15,27 @@ This is the common workflow that we will use for every single feature/fix:
 1. **Document** - Document the feature in @context/current-feature.md.
 2. **Branch** - Create new branch for feature, fix, etc
 3. **Implement** - Implement the feature/fix that I create in @context/current-feature.md
-4. **Test** - Verify it works in the browser. Implement unit testing later. Run `npm run build` and fix any errors
+4. **Test** - Run unit tests (`npm test` or `npm run test:unit`) for any new or modified server actions and utilities. Verify UI in the browser. Run `npm run lint` and `npm run build` to fix any errors.
 5. **Iterate** - Iterate and change things if needed
-6. **Commit** - Only after build passes and everything works
+6. **Commit** - Only after tests and build pass and everything works
 7. **Merge** - Merge to main
 8. **Delete Branch** - Delete branch after merge
 9. **Review** - Review AI-generated code periodically and on demand.
 10. Mark as completed in @context/current-feature.md and add to history
 
-Do NOT commit without permission and until the build passes. If build fails, fix the issues first.
+Do NOT commit without permission and until unit tests and the build pass. If any tests or the build fail, fix the issues first.
+
+## Unit Testing Guidelines
+
+We use **Vitest** for unit testing:
+
+- **Scope:** Test Server Actions (`src/actions/`) and utilities/helpers (`src/lib/`) exclusively.
+- **NO Components:** Do **NOT** write unit tests for React components (`*.tsx`). UI and components are verified interactively in the browser.
+- **Location:** Place unit tests in `tests/unit/actions/` and `tests/unit/lib/` (or colocated `*.test.ts` alongside source files).
+- **TypeScript Strictness:** Strict mode without `any` types. Test files must pass ESLint and TypeScript compilation.
+- **Commands:**
+  - `npm test` or `npm run test:unit`: Run all unit tests once (for verification / CI).
+  - `npm run test:watch`: Run unit tests in interactive watch mode during active development.
 
 ## Branching
 

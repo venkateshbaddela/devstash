@@ -104,7 +104,16 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 - **RSC Boundary Safety:** Centralized dynamic Lucide icon rendering in `src/lib/icons.tsx` (`<ItemTypeIcon />`), eliminating RSC boundary serialization errors (`Element type is invalid`) and adhering to React Compiler static component rules.
 - **Responsive 2-Column Grid:** Displays `ItemCard` grid (`grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4`) with type-matched left accent borders, tags, pin indicators, and favorite stars.
 - **Header & Breadcrumbs:** Displays breadcrumb navigation (`Dashboard > [Item Type]`), page title, description, PRO badge, item counter, and polished empty state when no items exist.
-- **Next.js 16 Compatibility:** Dynamic `generateMetadata` and page component resolve asynchronous route params via `await params`.
+### K. Unit Testing Infrastructure (Vitest)
+- **Framework & Config:** Configured Vitest 5 (`vitest.config.mts`) targeting Node.js environment (`environment: 'node'`) with automatic `.env` loading and path alias resolution (`@/*`, `~/*`).
+- **Target Scope:** Strictly scoped to Server Actions (`src/actions/`) and utilities (`src/lib/`). Excludes React components (`*.tsx`).
+- **Test Suites (61 passing unit tests):**
+  - `tests/unit/lib/rate-limit.test.ts`: Client IP extraction (priority order, proxy headers, whitespace trimming, fallbacks) and RFC-compliant 429 response formatting.
+  - `tests/unit/lib/icons.test.ts`: Lucide icon resolution across all 7 system types, plural/singular names, case-insensitivity, and fallback safety.
+  - `tests/unit/lib/auth-core.test.ts`: Input validation, token presence, length bounds (8–72 chars for bcrypt DoS defense), token consumption errors, and generic enumeration defense.
+  - `tests/unit/lib/items-slug.test.ts`: Slug resolution and normalization across singular/plural system types and PRO gating flags.
+  - `tests/unit/actions/profile.test.ts`: Avatar updates, display name limits, password change constraints, demo account safeguards, and session requirements.
+  - `tests/unit/actions/auth.test.ts`: Resend verification, email verification tokens, rate limit propagation, enumeration-safe generic messaging, and password reset delegation.
 
 ---
 
@@ -114,6 +123,9 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 npm run dev         # Next.js dev server
 npm run build       # Next.js production build (Turbopack)
 npm run lint        # ESLint check
+npm test            # Run Vitest unit tests (Server Actions & utilities)
+npm run test:unit   # Alias for npm test
+npm run test:watch  # Run Vitest unit tests in interactive watch mode
 npm run test:db     # Test Neon DB connection and print all demo data
 npm run test:auth   # Run end-to-end authentication and registration test suite
 npm run test:reset  # Run password reset integration tests

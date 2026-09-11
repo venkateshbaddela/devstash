@@ -23,6 +23,7 @@
 | **Storage** | Cloudflare R2 | S3-compatible storage for files and images (Pro) |
 | **Payments** | Stripe | Customer portal, webhook-driven subscriptions |
 | **AI** | OpenAI API | Server-side abstraction for tags, summaries, prompts |
+| **Testing** | Vitest | Fast Node.js unit tests for Server Actions and utilities |
 
 ### Architectural Rules
 - **Monolith first:** Single Next.js repository. Do not prematurely split into separate microservices.

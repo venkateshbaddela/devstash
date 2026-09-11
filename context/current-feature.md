@@ -1,22 +1,30 @@
-# Current Feature
+# Current Feature: Vitest Unit Testing Setup
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- [x] Install `vitest` as a dev dependency.
+- [x] Create `vitest.config.mts` configured for Node.js environment, alias resolution (`@/*`, `~/*`), and targeted strictly at server actions and utilities (excluding components).
+- [x] Add `test`, `test:unit`, and `test:watch` scripts to `package.json`.
+- [x] Implement initial unit tests for utilities (`src/lib/rate-limit.ts`, `src/lib/auth-core.ts`, `src/lib/icons.tsx`, `src/lib/db/items.ts`) and server actions (`src/actions/auth.ts`, `src/actions/profile.ts`).
+- [x] Update workflow documentation in `context/ai-interaction.md` reflecting mandatory unit tests for server actions and utilities before committing.
+- [x] Update testing standards in `context/coding-standards.md`, `context/session-handover.md`, and `AGENTS.md`.
+- [x] Verify `npm test` runs with 100% passing tests, ESLint passes (`npm run lint`), and Next.js builds cleanly (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- Scope constraint: Unit tests must focus exclusively on Server Actions (`src/actions/`) and utilities/helpers (`src/lib/`). Do not write tests for React components (`*.tsx`).
+- Node.js test environment (`environment: 'node'`) without unnecessary DOM dependencies.
+- Match Next.js tsconfig path aliases (`@/` and `~/`).
 
 ---
 
@@ -235,3 +243,18 @@ Not Started
 - Implemented dynamic Next.js metadata generation (`generateMetadata`) using Next.js 16 asynchronous `params` (`await params`).
 - Created automated integration test suite in `scripts/test-item-list-view.ts` (`npm run test:items`) with 47/47 passing assertions.
 - Verified cleanly against ESLint (`npm run lint`), automated tests (`npm run test:items`), and production build (`npm run build`).
+
+### Vitest Unit Testing Setup (2026-09-11)
+
+- Installed `vitest` and configured `vitest.config.mts` with `environment: 'node'` and Next.js path aliases (`@/*`, `~/*`).
+- Strictly scoped unit testing to Server Actions (`src/actions/`) and utilities (`src/lib/`), excluding React components.
+- Added `test` (`vitest run`), `test:unit`, and `test:watch` scripts to `package.json`.
+- Implemented 6 unit test suites with 61 passing tests across `tests/unit/`:
+  - `tests/unit/lib/rate-limit.test.ts`: Client IP header parsing & 429 response generation.
+  - `tests/unit/lib/icons.test.ts`: Lucide icon mapping, case-insensitivity, and fallback safety.
+  - `tests/unit/lib/auth-core.test.ts`: Password reset validation, bcrypt length constraint (8-72 chars), and generic enumeration defense.
+  - `tests/unit/lib/items-slug.test.ts`: Slug resolution, plural/singular normalization, and PRO item type gating.
+  - `tests/unit/actions/profile.test.ts`: User authentication guards, demo user protection, and password length bounds.
+  - `tests/unit/actions/auth.test.ts`: Email verification resend, verification tokens, and enumeration-safe responses.
+- Updated documentation and testing standards across `context/ai-interaction.md`, `context/coding-standards.md`, `context/project-overview.md`, `context/session-handover.md`, and `AGENTS.md`.
+- Verified cleanly with 61/61 passing unit tests (`npm test`), 0 ESLint errors/warnings (`npm run lint`), and clean production build (`npm run build`).
