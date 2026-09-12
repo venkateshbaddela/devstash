@@ -1,34 +1,22 @@
-# Current Feature: Item Deletion with Confirmation & Toast
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- Implement `deleteItem(itemId: string, userId: string)` in `src/lib/db/items.ts` ensuring user ownership and database deletion.
-- Implement `deleteItemAction(itemId: string)` in `src/actions/items.ts` with NextAuth authentication, demo user fallback, input validation, and cache revalidation (`/dashboard`, `/items`).
-- Provide accessible ShadCN UI confirmation dialog (`AlertDialog` / `Dialog`) confirming destructive item deletion with item title.
-- Connect delete action in `ItemDrawer` (`src/components/items/item-drawer.tsx`) with confirmation modal, loading spinner, and error handling.
-- Display a success toast notification upon deletion and automatically close drawer and refresh list view (`router.refresh()`).
-- Write Vitest unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` for deletion logic.
-- Add database integration test script `scripts/test-item-delete.ts` validating deletion, cascade cleanup, and security authorization.
-- Verify zero ESLint errors/warnings (`npm run lint`), passing tests (`npm test`), and successful build (`npm run build`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- **Confirmation UX:** Must require explicit confirmation before deleting an item, clearly stating that the action cannot be undone.
-- **Visual Harmony:** Style the dialog and buttons consistent with existing shadcn/ui components (`@base-ui/react/dialog`, dark theme, red destructive variant).
-- **Toast Feedback:** Display a toast notification on successful deletion matching the existing drawer toast pattern or global notification.
-- **List Synchronization:** Upon deletion, close the drawer, clear drawer item state, and refresh underlying route data (`router.refresh()`).
-- **Database Cascade:** Prisma schema specifies `onDelete: Cascade` on `item_collections` and `item_tags`, cleanly unlinking collections and tags upon item deletion without deleting tags or types.
-- **Authorization:** Ensure items can only be deleted by their authenticated owner (or demo user).
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -300,5 +288,19 @@ In Progress
 - Added comprehensive unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` (93/93 passing unit tests).
 - Added end-to-end database integration test in `scripts/test-item-edit.ts` (`npm run test:edit` - 17/17 passing assertions).
 - Verified with Playwright visual testing and interactions, 0 ESLint errors/warnings (`npm run lint`), and clean production build (`npm run build`).
+
+### Item Deletion with Confirmation & Toast (2026-09-12)
+
+- Implemented `deleteItem(itemId, userId)` in `src/lib/db/items.ts` with user authorization checks and cascading database deletion of item associations (`item_tags`, `item_collections`) while keeping tags and collections intact.
+- Implemented `deleteItemAction(itemId)` in `src/actions/items.ts` with NextAuth authentication, demo user fallback, input validation, and Next.js cache revalidation for `/dashboard` and `/items`.
+- Created accessible `AlertDialog` primitives in `src/components/ui/alert-dialog.tsx` using `@base-ui/react/alert-dialog` and shadcn styling tokens.
+- Created reusable `DeleteItemDialog` in `src/components/items/delete-item-dialog.tsx` featuring a destructive alert header, item title verification, permanent removal notice, loading spinner during deletion, and inline error feedback.
+- Integrated deletion modal into `ItemDrawer` (`src/components/items/item-drawer.tsx`) triggered by the header action bar trash button.
+- Extended `ItemDrawerProvider` in `src/components/items/item-drawer-context.tsx` with unified `showToast(type, message)` and rendered a viewport-fixed floating toast notification container that remains visible after drawer dismissal with auto-dismiss and close controls.
+- On successful deletion: closes the confirmation dialog, closes the drawer, displays success toast ("Item deleted successfully."), and refreshes underlying page lists via `router.refresh()`.
+- Added unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` bringing total unit tests to 105/105 passed.
+- Added database integration test script in `scripts/test-item-delete.ts` (`npm run test:delete`) verifying live item creation, unauthorized deletion rejection, cascade cleanup, and non-existent item error handling (19/19 assertions passed).
+- Verified cleanly against ESLint (`npm run lint`), all test suites (`npm test`, `npm run test:delete`), and Next.js production build (`npm run build`).
+
 
 
