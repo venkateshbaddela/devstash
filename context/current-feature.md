@@ -1,38 +1,22 @@
-# Current Feature: Monaco Code Editor
+# Current Feature
 
 ---
 
 ## Status
 
-Complete
+Not Started
 
 ---
 
 ## Goals
 
-- Create reusable `CodeEditor` component using Monaco Editor with dark theme matching Devstash design.
-- Replace `Textarea` / static code view with `CodeEditor` for `snippet` and `command` item types only.
-- Keep `Textarea` for notes, prompts, and other non-code item types.
-- Add macOS-style window dots (red, yellow, green) at the top of the editor header.
-- Add quick copy button in the editor header with visual feedback ("Copied!").
-- Display active programming language in the editor header next to the copy button.
-- Support both display (read-only) and edit modes across components (`ItemDrawer` view & edit modes, `CreateItemDialog`).
-- Make editor height fluid with a maximum height of 400px and custom styled scrollbars matching the dark theme.
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- Spec source: `context/features/code-editor-spec.md`
-- Target components to integrate:
-  - `src/components/items/item-drawer.tsx`:
-    - Display / Read-only view: replace static line-numbered table with read-only `CodeEditor` for snippets and commands.
-    - Edit mode: replace `<Textarea>` with editable `CodeEditor` for snippets and commands.
-  - `src/components/items/create-item-dialog.tsx`:
-    - Replace `<Textarea>` content field with `CodeEditor` when selected type is `snippet` or `command`.
-- Non-code types (`note`, `prompt`, etc.) must continue using standard `<Textarea>`.
-- Client-side execution: Monaco Editor requires browser environment; ensure dynamic/client-safe loading (e.g. `@monaco-editor/react` or lazy loading) without Next.js SSR hydration errors.
-- Editor chrome: macOS window dots (red `#ff5f56`, yellow `#ffbd2e`, green `#27c93f`), header bar with language label and quick copy button, smooth dark theme integration.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -332,3 +316,14 @@ Complete
 - Added comprehensive unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` (125/125 passed).
 - Added end-to-end database integration test in `scripts/test-item-create.ts` (`npm run test:create` - 24/24 assertions passed).
 - Verified cleanly against ESLint (`npm run lint`), all test suites (`npm test`), and Next.js production build (`npm run build`).
+
+### Monaco Code Editor & Form Consistency (2026-09-12)
+
+- Integrated `@monaco-editor/react` with custom `devstash-dark` theme matching Devstash UI tokens (`#09090b` canvas).
+- Built reusable `CodeEditor` component (`src/components/ui/code-editor.tsx`) featuring macOS-style window dots, formatted language badge, quick clipboard copy with temporary "Copied!" feedback, dynamic height auto-sizing (up to 400px), and custom dark scrollbar sliders.
+- Integrated `CodeEditor` for `snippet` and `command` item types across `CreateItemDialog` and `ItemDrawer` (both view and edit modes), while preserving native textareas for notes and prompts.
+- Added language normalization and formatting utilities in `src/lib/monaco-languages.ts` with comprehensive unit tests (`tests/unit/lib/monaco-languages.test.ts`).
+- Harmonized form field backgrounds across `CreateItemDialog` and `ItemDrawer` by aligning `dark:bg-input/30` across textareas and dropdown triggers.
+- Standardized border radius to `rounded-lg` (`var(--radius)`) across all input, textarea, dropdown, and editor fields.
+- Created `CreateTypeItemButton` component and integrated type-specific creation buttons on each `/items/[type]` page header and empty state, automatically preselecting the active type in `CreateItemDialog`.
+- Verified 100% passing across Vitest unit tests (140/140 passed), ESLint (`npm run lint`), and Next.js production build (`npm run build`).
