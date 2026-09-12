@@ -1,22 +1,37 @@
-# Current Feature
+# Current Feature: Item Drawer
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Implement Prisma query function in `src/lib/db/items.ts` to fetch full item details by ID scoped to authenticated user.
+- Create API route `GET /api/items/[id]` with authentication checks, returning full item data.
+- Build client-side drawer state management wrapper / context to manage drawer open/close and active item state without breaking Server Component architecture.
+- Create right-side slide-in `ItemDrawer` component using shadcn `Sheet` (`SheetContent side="right"`).
+- Implement drawer loading skeleton state while fetching full item details on click.
+- Render drawer header with item type icon, title, type badge, and optional language badge.
+- Render action bar with Favorite (star icon, yellow when active), Pin, Copy, Edit (pencil icon), and Delete (trash icon, right-aligned) matching reference design.
+- Render item detail sections: Description, Content display, Tags, Collections, and Metadata Details (created/updated dates).
+- Connect `ItemCard` click events across Dashboard (pinned & recent items) and Items List (`/items/[type]`) to open drawer and fetch data.
+- Ensure test coverage with Vitest unit tests, clean ESLint check (`npm run lint`), and clean production build (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- Spec source: [item-drawer-spec.md](file:///workspaces/devstash/context/features/item-drawer-spec.md)
+- Reference screenshot: [dashboard-ui-drawer.png](file:///workspaces/devstash/context/screenshots/dashboard-ui-drawer.png)
+- Primary detail view: right-side slide-in drawer using shadcn `Sheet` (no separate item page).
+- Snappy fetch-on-click via `/api/items/[id]` with skeleton loading state.
+- Card data (title, description, tags, etc.) is rendered initially by Server Components; full details (content, collections, dates, language) fetched on demand.
+- Extras like code editor and item-specific complex editors will come later; focus on drawer details display and action bar layout.
+- Action bar layout from screenshot: Left group (Favorite, Pin, Copy), Edit icon button, right-aligned Delete (trash) button.
 
 ---
 

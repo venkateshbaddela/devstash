@@ -1,23 +1,48 @@
+"use client";
+
 import { Star, Pin } from "lucide-react";
 import type { Item as MockItem } from "@/lib/mock-data";
 import type { DashboardItem } from "@/lib/db/items";
 import { ItemTypeIcon } from "@/lib/icons";
+import { useOptionalItemDrawer } from "@/components/items/item-drawer-context";
 
 interface ItemCardProps {
   item: DashboardItem | MockItem;
+  onClick?: (item: DashboardItem | MockItem) => void;
 }
 
-export function ItemCard({ item }: ItemCardProps) {
+export function ItemCard({ item, onClick }: ItemCardProps) {
+  const drawer = useOptionalItemDrawer();
+
+  const handleClick = () => {
+    onClick?.(item);
+    if (drawer && item.id) {
+      drawer.openItem(item.id, item as DashboardItem);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
   return (
     <article
-      className="group relative flex items-start gap-3.5 sm:gap-4 rounded-xl border border-border/80 bg-card/40 p-3.5 sm:p-4 transition-all hover:bg-card/70 hover:border-border cursor-pointer"
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className="group relative flex items-start gap-3.5 sm:gap-4 rounded-xl border border-border/80 bg-card/40 p-3.5 sm:p-4 transition-all hover:bg-card/70 hover:border-border cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring select-none text-left"
       style={{
         borderLeftWidth: "3px",
         borderLeftColor: item.typeColor || "#3b82f6",
       }}
     >
       {/* Icon Square */}
-      <div className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-muted/40 shrink-0 mt-0.5">
+      <div className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-muted/40 shrink-0 mt-0.5 pointer-events-none">
+
         <ItemTypeIcon
           name={item.typeIcon || item.type}
           className="size-4 sm:size-4.5"

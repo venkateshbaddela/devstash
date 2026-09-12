@@ -20,6 +20,7 @@
     "test:atomic-reg": "tsx scripts/test-atomic-registration.ts",
     "test:session": "tsx scripts/test-token-version.ts",
     "test:items": "tsx scripts/test-item-list-view.ts",
+    "test:drawer": "tsx scripts/test-item-drawer.ts",
     "studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

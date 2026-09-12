@@ -362,3 +362,132 @@ export const getItemsByType = cache(async function getItemsByType(
   };
 });
 
+export interface ItemDetail {
+  id: string;
+  title: string;
+  description: string | null;
+  content: string | null;
+  contentType: string;
+  url: string | null;
+  language: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  mimeType: string | null;
+  isFavorite: boolean;
+  isPinned: boolean;
+  type: string;
+  typeDisplayName: string;
+  typeIcon: string;
+  typeColor: string;
+  isPro?: boolean;
+  tags: string[];
+  collections: Array<{
+    id: string;
+    name: string;
+    color: string | null;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+  formattedCreatedAt: string;
+  formattedUpdatedAt: string;
+}
+
+function formatDetailDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+/**
+ * Fetches full item details by ID scoped to the authenticated user or default demo user.
+ * Memoized per server request using React cache().
+ */
+export const getItemById = cache(async function getItemById(
+  itemId: string,
+  userId?: string
+): Promise<ItemDetail | null> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+  if (!targetUserId) return null;
+
+  const item = await prisma.item.findFirst({
+    where: {
+      id: itemId,
+      userId: targetUserId,
+    },
+    include: {
+      itemType: {
+        select: {
+          id: true,
+          name: true,
+          icon: true,
+          color: true,
+        },
+      },
+      tags: {
+        include: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      collections: {
+        include: {
+          collection: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!item) return null;
+
+  const lower = item.itemType.name.toLowerCase();
+  const typeDisplayName =
+    DISPLAY_NAMES[lower] ||
+    item.itemType.name.charAt(0).toUpperCase() + item.itemType.name.slice(1);
+  const isPro = lower === "file" || lower === "image";
+
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    content: item.content,
+    contentType: item.contentType,
+    url: item.url,
+    language: item.language,
+    fileUrl: item.fileUrl,
+    fileName: item.fileName,
+    fileSize: item.fileSize ? Number(item.fileSize) : null,
+    mimeType: item.mimeType,
+    isFavorite: item.isFavorite,
+    isPinned: item.isPinned,
+    type: item.itemType.name,
+    typeDisplayName,
+    typeIcon: item.itemType.icon,
+    typeColor: item.itemType.color,
+    isPro,
+    tags: item.tags.map((t) => t.tag.name),
+    collections: item.collections.map((c) => ({
+      id: c.collection.id,
+      name: c.collection.name,
+      color: c.collection.color,
+    })),
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    formattedCreatedAt: formatDetailDate(item.createdAt),
+    formattedUpdatedAt: formatDetailDate(item.updatedAt),
+  };
+});
+
+
