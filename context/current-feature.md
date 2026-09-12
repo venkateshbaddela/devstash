@@ -1,22 +1,44 @@
-# Current Feature
+# Current Feature: Markdown Editor
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Create reusable `MarkdownEditor` component with tabbed interface (`Write` / `Preview`) matching Devstash dark theme and `CodeEditor` styling.
+- Support both edit mode (defaulting to Write tab with Preview tab available) and display / readonly mode (showing only the rendered Preview tab).
+- Include header action with copy button (matching `CodeEditor` styling with clipboard copy and feedback).
+- Render markdown using `react-markdown` and `remark-gfm` with complete GitHub Flavored Markdown support (headings h1-h6, lists, blockquotes, links, tables, code blocks, and inline code).
+- Implement custom dark mode preview styling (e.g. `.markdown-preview`) with fluid height capped at `max 400px` (matching `CodeEditor` height behavior).
+- Replace plain textareas with `MarkdownEditor` for `note` and `prompt` item types in `CreateItemDialog`.
+- Replace plain textareas / raw text display with `MarkdownEditor` for `note` and `prompt` item types in `ItemDrawer` (both view mode in readonly and edit mode).
+- Keep `CodeEditor` unchanged for `snippet` and `command` items.
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- Spec file: [markdown-editor-spec.md](file:///workspaces/devstash/context/features/markdown-editor-spec.md)
+- Requires installing `react-markdown` and `remark-gfm`.
+- Integration Points:
+  - `CreateItemDialog` (`src/components/items/create-item-dialog.tsx`): Note and prompt content input field.
+  - `ItemDrawer` (`src/components/items/item-drawer.tsx`): Edit mode for note and prompt content field; view mode in readonly for note and prompt content display.
+  - Preserve `CodeEditor` for `snippet` and `command`.
+- Styling Details:
+  - Headings (h1-h6) visually distinct with proper sizing and weight.
+  - Code blocks with dark background and monospace font.
+  - Inline code with subtle background highlight.
+  - Lists (ordered/unordered) with proper indentation and bullets.
+  - Blockquotes with left border accent.
+  - Links in blue with hover state.
+  - Tables with borders and header background.
+  - Custom CSS class (e.g., `.markdown-preview`) for dark mode styling.
+  - Fluid height with max 400px, matching `CodeEditor` behavior.
 
 ---
 

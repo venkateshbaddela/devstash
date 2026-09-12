@@ -41,6 +41,8 @@ import {
 } from "@/lib/validations/items";
 import { cn } from "cn";
 import { CodeEditor } from "@/components/ui/code-editor";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
+import { isMarkdownItemType, isCodeItemType } from "@/lib/markdown";
 import type { ItemDetail } from "@/lib/db/items";
 
 interface CreateItemDialogProps {
@@ -149,7 +151,8 @@ export function CreateItemDialog({
 
   const activeConfig = TYPE_CONFIG[selectedType];
   const isLink = selectedType === "link";
-  const isCodeOrCommand = selectedType === "snippet" || selectedType === "command";
+  const isCodeOrCommand = isCodeItemType(selectedType);
+  const isMarkdownType = isMarkdownItemType(selectedType);
 
   const isFormValid =
     title.trim().length > 0 &&
@@ -433,6 +436,15 @@ export function CreateItemDialog({
                     value={content}
                     onChange={setContent}
                     language={language}
+                    readOnly={false}
+                    minHeight={140}
+                    maxHeight={400}
+                    placeholder={activeConfig.contentPlaceholder}
+                  />
+                ) : isMarkdownType ? (
+                  <MarkdownEditor
+                    value={content}
+                    onChange={setContent}
                     readOnly={false}
                     minHeight={140}
                     maxHeight={400}

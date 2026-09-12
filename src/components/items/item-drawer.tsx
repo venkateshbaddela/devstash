@@ -34,6 +34,8 @@ import { useItemDrawer } from "@/components/items/item-drawer-context";
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog";
 import { updateItemAction } from "@/actions/items";
 import { CodeEditor } from "@/components/ui/code-editor";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
+import { isMarkdownItemType, isCodeItemType } from "@/lib/markdown";
 import { cn } from "cn";
 
 export function ItemDrawer() {
@@ -562,12 +564,14 @@ export function ItemDrawer() {
                   >
                     <span>Content</span>
                     <span className="text-[11px] text-muted-foreground font-normal">
-                      {lowerType === "snippet" || lowerType === "command"
+                      {isCodeItemType(lowerType)
                         ? "Code / Script"
+                        : isMarkdownItemType(lowerType)
+                        ? "Markdown"
                         : "Text"}
                     </span>
                   </label>
-                  {lowerType === "snippet" || lowerType === "command" ? (
+                  {isCodeItemType(lowerType) ? (
                     <CodeEditor
                       value={content}
                       onChange={setContent}
@@ -579,6 +583,19 @@ export function ItemDrawer() {
                         lowerType === "snippet"
                           ? "Paste code snippet here..."
                           : "Enter terminal command..."
+                      }
+                    />
+                  ) : isMarkdownItemType(lowerType) ? (
+                    <MarkdownEditor
+                      value={content}
+                      onChange={setContent}
+                      readOnly={false}
+                      minHeight={140}
+                      maxHeight={400}
+                      placeholder={
+                        lowerType === "note"
+                          ? "Write note in Markdown..."
+                          : "Write prompt in Markdown..."
                       }
                     />
                   ) : (
@@ -743,10 +760,17 @@ export function ItemDrawer() {
                     <div className="h-3.5 w-1/3 bg-zinc-800 rounded" />
                   </div>
                 ) : item?.content ? (
-                  lowerType === "snippet" || lowerType === "command" ? (
+                  isCodeItemType(lowerType) ? (
                     <CodeEditor
                       value={item.content}
                       language={item.language}
+                      readOnly={true}
+                      minHeight={70}
+                      maxHeight={400}
+                    />
+                  ) : isMarkdownItemType(lowerType) ? (
+                    <MarkdownEditor
+                      value={item.content}
                       readOnly={true}
                       minHeight={70}
                       maxHeight={400}
