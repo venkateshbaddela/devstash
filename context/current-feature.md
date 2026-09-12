@@ -1,37 +1,22 @@
-# Current Feature: Item Drawer — Edit Mode
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- Create Zod validation schema for item update payloads (`title`, `description`, `content`, `url`, `language`, `tags`).
-- Implement database `updateItem` query function in `src/lib/db/items.ts` to update item fields, reconcile tags (disconnect existing and connect-or-create new ones), and return updated `ItemDetail`.
-- Implement `updateItemAction` Server Action in `src/actions/items.ts` with session authentication (`auth()`), ownership validation, Zod input validation, and standard `{ success, data, error }` return pattern.
-- Add edit mode toggle in `ItemDrawer`: clicking the Edit button in the action bar switches the drawer inline to edit mode.
-- In edit mode, replace the view action bar with Save and Cancel buttons; Cancel discards edits and returns to view mode.
-- Render controlled editable form fields: Title (required text input), Description (textarea), and Tags (comma-separated text input) for all types.
-- Render type-specific fields conditionally: Content (textarea) for snippets, prompts, commands, notes; Language (text input) for snippets, commands; URL (text input) for links.
-- Keep item type, collections, and timestamps non-editable in edit mode.
-- Handle client-side UX guards: disable Save when title is empty, show loading state while saving, display toast notifications on success/error, update drawer state immediately, and trigger `router.refresh()`.
-- Add test coverage with Vitest unit tests for the Server Action and update logic, clean ESLint check (`npm run lint`), and clean production build (`npm run build`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- Spec source: [item-drawer-edit-spec.md](file:///workspaces/devstash/context/features/item-drawer-edit-spec.md)
-- Inline editing: The same drawer stays open without page navigation or modal popping.
-- Server Action in `src/actions/items.ts` validates payload with Zod before database operations.
-- Tag reconciliation: Disconnect all existing `item_tags` relations and connect-or-create new tags on save.
-- Return updated `ItemDetail` directly from `updateItemAction` so the drawer refreshes instantly without a secondary fetch.
-- After saving, invoke `router.refresh()` so underlying card lists on `/dashboard` or `/items/[type]` reflect updated titles, descriptions, and tags.
-- Simple state management: controlled inputs with local component state.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -289,4 +274,19 @@ In Progress
 - Added unit test suites in `tests/unit/lib/items-query.test.ts` and `tests/unit/lib/items-api.test.ts` (73/73 passing unit tests).
 - Added end-to-end database integration test in `scripts/test-item-drawer.ts` (`npm run test:drawer` - 20/20 passing assertions).
 - Verified with Playwright visual testing across Dashboard and Items List views, 0 ESLint errors/warnings (`npm run lint`), and clean production build (`npm run build`).
+
+### Item Drawer — Edit Mode (2026-09-12)
+
+- Implemented inline edit mode within `ItemDrawer` (`src/components/items/item-drawer.tsx`), allowing fields to become editable inputs without page navigation or modal popping.
+- Added `updateItemSchema` Zod validation in `src/lib/validations/items.ts` validating title (required), description, content, url, language, and tags array.
+- Created `updateItem` query function in `src/lib/db/items.ts` performing transactional tag reconciliation (disconnecting existing and upserting/connecting new tags), in-memory tag deduplication, core field updates, and interactive transaction timeout safety (15000ms).
+- Implemented `updateItemAction` Server Action in `src/actions/items.ts` with NextAuth session authentication, demo user fallback, ownership check, Zod input validation, path cache revalidation (`/dashboard`, `/items`), and `{ success, data, error }` response structure.
+- Exposed `setItemDetail` in `src/components/items/item-drawer-context.tsx` to immediately synchronize drawer state upon saving.
+- Rendered controlled editable form inputs: Title (required with dynamic header reflection), Description (textarea), Language (snippets, commands), Content (snippets, prompts, commands, notes), URL (links), and Tags (comma-separated input).
+- Kept item type, collections, and created/updated timestamps read-only in edit mode.
+- Handled client-side UX guards: disabled Save button when title is empty or actively saving (showing spinner with "Saving..."), Cancel button discarding edits, auto-dismissing toast notifications on success/error, and `router.refresh()` triggering instant underlying card list refresh.
+- Added comprehensive unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` (93/93 passing unit tests).
+- Added end-to-end database integration test in `scripts/test-item-edit.ts` (`npm run test:edit` - 17/17 passing assertions).
+- Verified with Playwright visual testing and interactions, 0 ESLint errors/warnings (`npm run lint`), and clean production build (`npm run build`).
+
 
