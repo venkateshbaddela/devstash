@@ -1,22 +1,37 @@
-# Current Feature
+# Current Feature: Item Drawer — Edit Mode
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Create Zod validation schema for item update payloads (`title`, `description`, `content`, `url`, `language`, `tags`).
+- Implement database `updateItem` query function in `src/lib/db/items.ts` to update item fields, reconcile tags (disconnect existing and connect-or-create new ones), and return updated `ItemDetail`.
+- Implement `updateItemAction` Server Action in `src/actions/items.ts` with session authentication (`auth()`), ownership validation, Zod input validation, and standard `{ success, data, error }` return pattern.
+- Add edit mode toggle in `ItemDrawer`: clicking the Edit button in the action bar switches the drawer inline to edit mode.
+- In edit mode, replace the view action bar with Save and Cancel buttons; Cancel discards edits and returns to view mode.
+- Render controlled editable form fields: Title (required text input), Description (textarea), and Tags (comma-separated text input) for all types.
+- Render type-specific fields conditionally: Content (textarea) for snippets, prompts, commands, notes; Language (text input) for snippets, commands; URL (text input) for links.
+- Keep item type, collections, and timestamps non-editable in edit mode.
+- Handle client-side UX guards: disable Save when title is empty, show loading state while saving, display toast notifications on success/error, update drawer state immediately, and trigger `router.refresh()`.
+- Add test coverage with Vitest unit tests for the Server Action and update logic, clean ESLint check (`npm run lint`), and clean production build (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- Spec source: [item-drawer-edit-spec.md](file:///workspaces/devstash/context/features/item-drawer-edit-spec.md)
+- Inline editing: The same drawer stays open without page navigation or modal popping.
+- Server Action in `src/actions/items.ts` validates payload with Zod before database operations.
+- Tag reconciliation: Disconnect all existing `item_tags` relations and connect-or-create new tags on save.
+- Return updated `ItemDetail` directly from `updateItemAction` so the drawer refreshes instantly without a secondary fetch.
+- After saving, invoke `router.refresh()` so underlying card lists on `/dashboard` or `/items/[type]` reflect updated titles, descriptions, and tags.
+- Simple state management: controlled inputs with local component state.
 
 ---
 

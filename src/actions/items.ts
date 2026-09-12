@@ -1,0 +1,95 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
+import { getDefaultUserId } from "@/lib/db/collections";
+import { updateItem as updateItemDb, type ItemDetail } from "@/lib/db/items";
+import { updateItemSchema } from "@/lib/validations/items";
+
+export interface ActionResult<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+/**
+ * Server action to update an existing item.
+ * Validates payload with Zod, checks user authentication and ownership,
+ * updates fields and reconciles tags, and revalidates dashboard and items pages.
+ */
+export async function updateItemAction(
+  itemId: string,
+  input: unknown
+): Promise<ActionResult<ItemDetail>> {
+  try {
+    if (!itemId || typeof itemId !== "string" || !itemId.trim()) {
+      return { success: false, error: "Item ID is required." };
+    }
+
+    const parseResult = updateItemSchema.safeParse(input);
+    if (!parseResult.success) {
+      const errorMsg =
+        parseResult.error.issues[0]?.message || "Validation failed.";
+      return { success: false, error: errorMsg };
+    }
+
+    let session = null;
+    try {
+      session = await auth();
+    } catch {
+      // In tests or non-request context
+    }
+
+    const userId = session?.user?.id ?? (await getDefaultUserId());
+    if (!userId) {
+      return {
+        success: false,
+        error: "Unauthorized. You must be signed in to perform this action.",
+      };
+    }
+
+    const updatedItem = await updateItemDb(
+      itemId.trim(),
+      userId,
+      parseResult.data
+    );
+
+    if (!updatedItem) {
+      return {
+        success: false,
+        error: "Item not found or you do not have permission to edit it.",
+      };
+    }
+
+    // Revalidate paths so dashboard and items list reflect edits
+    try {
+      revalidatePath("/dashboard");
+      revalidatePath("/items", "layout");
+    } catch {
+      // Ignored outside Next.js request lifecycle (e.g. standalone scripts or testing)
+    }
+
+    return {
+      success: true,
+      data: updatedItem,
+      message: "Item updated successfully.",
+    };
+  } catch (error) {
+    console.error("Error in updateItemAction:", error);
+    return {
+      success: false,
+      error: "An unexpected error occurred while updating the item.",
+    };
+  }
+}
+
+/**
+ * Alias for updateItemAction matching spec conventions.
+ */
+export async function updateItem(
+  itemId: string,
+  input: unknown
+): Promise<ActionResult<ItemDetail>> {
+  return updateItemAction(itemId, input);
+}

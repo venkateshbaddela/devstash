@@ -401,6 +401,71 @@ function formatDetailDate(date: Date): string {
   }).format(date);
 }
 
+function mapToItemDetail(item: {
+  id: string;
+  title: string;
+  description: string | null;
+  content: string | null;
+  contentType: string;
+  url: string | null;
+  language: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: bigint | null;
+  mimeType: string | null;
+  isFavorite: boolean;
+  isPinned: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  itemType: {
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+  };
+  tags: Array<{ tag: { id: string; name: string } }>;
+  collections: Array<{
+    collection: { id: string; name: string; color: string | null };
+  }>;
+}): ItemDetail {
+  const lower = item.itemType.name.toLowerCase();
+  const typeDisplayName =
+    DISPLAY_NAMES[lower] ||
+    item.itemType.name.charAt(0).toUpperCase() + item.itemType.name.slice(1);
+  const isPro = lower === "file" || lower === "image";
+
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    content: item.content,
+    contentType: item.contentType,
+    url: item.url,
+    language: item.language,
+    fileUrl: item.fileUrl,
+    fileName: item.fileName,
+    fileSize: item.fileSize ? Number(item.fileSize) : null,
+    mimeType: item.mimeType,
+    isFavorite: item.isFavorite,
+    isPinned: item.isPinned,
+    type: item.itemType.name,
+    typeDisplayName,
+    typeIcon: item.itemType.icon,
+    typeColor: item.itemType.color,
+    isPro,
+    tags: item.tags.map((t) => t.tag.name),
+    collections: item.collections.map((c) => ({
+      id: c.collection.id,
+      name: c.collection.name,
+      color: c.collection.color,
+    })),
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    formattedCreatedAt: formatDetailDate(item.createdAt),
+    formattedUpdatedAt: formatDetailDate(item.updatedAt),
+  };
+}
+
 /**
  * Fetches full item details by ID scoped to the authenticated user or default demo user.
  * Memoized per server request using React cache().
@@ -452,42 +517,126 @@ export const getItemById = cache(async function getItemById(
 
   if (!item) return null;
 
-  const lower = item.itemType.name.toLowerCase();
-  const typeDisplayName =
-    DISPLAY_NAMES[lower] ||
-    item.itemType.name.charAt(0).toUpperCase() + item.itemType.name.slice(1);
-  const isPro = lower === "file" || lower === "image";
-
-  return {
-    id: item.id,
-    title: item.title,
-    description: item.description,
-    content: item.content,
-    contentType: item.contentType,
-    url: item.url,
-    language: item.language,
-    fileUrl: item.fileUrl,
-    fileName: item.fileName,
-    fileSize: item.fileSize ? Number(item.fileSize) : null,
-    mimeType: item.mimeType,
-    isFavorite: item.isFavorite,
-    isPinned: item.isPinned,
-    type: item.itemType.name,
-    typeDisplayName,
-    typeIcon: item.itemType.icon,
-    typeColor: item.itemType.color,
-    isPro,
-    tags: item.tags.map((t) => t.tag.name),
-    collections: item.collections.map((c) => ({
-      id: c.collection.id,
-      name: c.collection.name,
-      color: c.collection.color,
-    })),
-    createdAt: item.createdAt.toISOString(),
-    updatedAt: item.updatedAt.toISOString(),
-    formattedCreatedAt: formatDetailDate(item.createdAt),
-    formattedUpdatedAt: formatDetailDate(item.updatedAt),
-  };
+  return mapToItemDetail(item);
 });
+
+export interface UpdateItemData {
+  title: string;
+  description?: string | null;
+  content?: string | null;
+  url?: string | null;
+  language?: string | null;
+  tags?: string[];
+}
+
+/**
+ * Updates an item's editable fields and reconciles its tags.
+ * Reconciles tags by disconnecting existing ones and connecting/creating new ones.
+ * Returns the fresh ItemDetail.
+ */
+export async function updateItem(
+  itemId: string,
+  userId: string | undefined,
+  data: UpdateItemData
+): Promise<ItemDetail | null> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+  if (!targetUserId) return null;
+
+  const existing = await prisma.item.findFirst({
+    where: { id: itemId, userId: targetUserId },
+  });
+
+  if (!existing) return null;
+
+  return await prisma.$transaction(async (tx) => {
+    // 1. Reconcile tags if tags array is provided
+    if (Array.isArray(data.tags)) {
+      await tx.itemTag.deleteMany({
+        where: { itemId },
+      });
+
+      const uniqueTagNames = Array.from(
+        new Set(
+          data.tags
+            .map((t) => t.trim())
+            .filter((t) => t.length > 0)
+        )
+      );
+
+      for (const name of uniqueTagNames) {
+        const tag = await tx.tag.upsert({
+          where: {
+            userId_name: {
+              userId: targetUserId,
+              name,
+            },
+          },
+          create: {
+            name,
+            userId: targetUserId,
+          },
+          update: {},
+        });
+
+        await tx.itemTag.create({
+          data: {
+            itemId,
+            tagId: tag.id,
+          },
+        });
+      }
+    }
+
+    // 2. Update core item properties
+    const updated = await tx.item.update({
+      where: { id: itemId },
+      data: {
+        title: data.title.trim(),
+        description:
+          data.description !== undefined ? data.description : undefined,
+        content: data.content !== undefined ? data.content : undefined,
+        url: data.url !== undefined ? data.url : undefined,
+        language: data.language !== undefined ? data.language : undefined,
+      },
+      include: {
+        itemType: {
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+            color: true,
+          },
+        },
+        tags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        collections: {
+          include: {
+            collection: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return mapToItemDetail(updated);
+  }, {
+    timeout: 15000,
+    maxWait: 10000,
+  });
+}
+
 
 

@@ -19,6 +19,7 @@ interface ItemDrawerContextValue {
   closeDrawer: () => void;
   toggleFavorite: () => void;
   togglePin: () => void;
+  setItemDetail: (item: ItemDetail) => void;
 }
 
 const ItemDrawerContext = createContext<ItemDrawerContextValue | null>(null);
@@ -94,6 +95,23 @@ export function ItemDrawerProvider({ children }: { children: React.ReactNode }) 
     );
   }, []);
 
+  const setItemDetail = useCallback((updatedItem: ItemDetail) => {
+    setItem(updatedItem);
+    setPreviewItem((prev) =>
+      prev
+        ? {
+            ...prev,
+            title: updatedItem.title,
+            description: updatedItem.description,
+            content: updatedItem.content,
+            url: updatedItem.url,
+            language: updatedItem.language,
+            tags: updatedItem.tags,
+          }
+        : null
+    );
+  }, []);
+
   return (
     <ItemDrawerContext.Provider
       value={{
@@ -106,6 +124,7 @@ export function ItemDrawerProvider({ children }: { children: React.ReactNode }) 
         closeDrawer,
         toggleFavorite,
         togglePin,
+        setItemDetail,
       }}
     >
       {children}
