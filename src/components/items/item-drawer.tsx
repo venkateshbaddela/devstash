@@ -84,6 +84,8 @@ export function ItemDrawer() {
   const isPinned = item ? item.isPinned : previewItem?.isPinned ?? false;
   const displayTags = item?.tags ?? previewItem?.tags ?? [];
   const displayId = item?.id ?? previewItem?.id ?? "";
+  const displayLanguage = item?.language ?? previewItem?.language ?? null;
+  const activeLanguage = isEditing ? (language.trim() || null) : displayLanguage;
 
   const lowerType = displayType.toLowerCase();
   const showContentField = ["snippet", "prompt", "command", "note"].includes(lowerType);
@@ -261,6 +263,15 @@ export function ItemDrawer() {
                     }}
                   >
                     {displayTypeDisplayName}
+                  </Badge>
+                )}
+
+                {activeLanguage && (
+                  <Badge
+                    variant="outline"
+                    className="h-5 px-2 text-[11px] font-mono font-medium rounded-md border border-border/70 text-muted-foreground bg-muted/40"
+                  >
+                    {activeLanguage}
                   </Badge>
                 )}
               </div>
