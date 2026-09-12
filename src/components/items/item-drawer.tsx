@@ -33,6 +33,7 @@ import { ItemTypeIcon } from "@/lib/icons";
 import { useItemDrawer } from "@/components/items/item-drawer-context";
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog";
 import { updateItemAction } from "@/actions/items";
+import { CodeEditor } from "@/components/ui/code-editor";
 import { cn } from "cn";
 
 export function ItemDrawer() {
@@ -497,7 +498,7 @@ export function ItemDrawer() {
                   placeholder="Enter item title..."
                   disabled={isSaving}
                   required
-                  className="h-9 text-sm"
+                  className="h-9 text-xs sm:text-sm bg-background/60 border-border/70 rounded-lg"
                   autoFocus
                 />
                 {!title.trim() && (
@@ -525,7 +526,7 @@ export function ItemDrawer() {
                   placeholder="Add a brief description..."
                   disabled={isSaving}
                   rows={3}
-                  className="w-full min-h-[72px] rounded-lg border border-input bg-muted/20 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 outline-none resize-y transition-colors disabled:opacity-50"
+                  className="w-full min-h-[76px] rounded-lg border border-border/70 bg-background/60 dark:bg-input/30 p-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 outline-none resize-y transition-colors disabled:opacity-50"
                 />
               </div>
 
@@ -547,7 +548,7 @@ export function ItemDrawer() {
                     onChange={(e) => setLanguage(e.target.value)}
                     placeholder="e.g. typescript, python, bash..."
                     disabled={isSaving}
-                    className="h-9 text-sm"
+                    className="h-9 text-xs sm:text-sm font-mono bg-background/60 border-border/70 rounded-lg"
                   />
                 </div>
               )}
@@ -566,26 +567,31 @@ export function ItemDrawer() {
                         : "Text"}
                     </span>
                   </label>
-                  <textarea
-                    id="edit-item-content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder={
-                      lowerType === "snippet"
-                        ? "Paste code snippet here..."
-                        : lowerType === "command"
-                        ? "Enter terminal command..."
-                        : "Enter content here..."
-                    }
-                    disabled={isSaving}
-                    rows={7}
-                    className={cn(
-                      "w-full min-h-[140px] rounded-xl border border-input p-3 text-xs outline-none resize-y transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
-                      lowerType === "snippet" || lowerType === "command"
-                        ? "bg-zinc-950/90 font-mono text-zinc-200 placeholder:text-zinc-500"
-                        : "bg-muted/20 text-foreground placeholder:text-muted-foreground text-sm"
-                    )}
-                  />
+                  {lowerType === "snippet" || lowerType === "command" ? (
+                    <CodeEditor
+                      value={content}
+                      onChange={setContent}
+                      language={language}
+                      readOnly={false}
+                      minHeight={140}
+                      maxHeight={400}
+                      placeholder={
+                        lowerType === "snippet"
+                          ? "Paste code snippet here..."
+                          : "Enter terminal command..."
+                      }
+                    />
+                  ) : (
+                    <textarea
+                      id="edit-item-content"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Enter content here..."
+                      disabled={isSaving}
+                      rows={7}
+                      className="w-full min-h-[140px] rounded-lg border border-border/70 bg-background/60 dark:bg-input/30 p-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 outline-none resize-y transition-colors disabled:opacity-50"
+                    />
+                  )}
                 </div>
               )}
 
@@ -608,7 +614,7 @@ export function ItemDrawer() {
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://example.com"
                     disabled={isSaving}
-                    className="h-9 text-sm"
+                    className="h-9 text-xs sm:text-sm font-mono bg-background/60 border-border/70 rounded-lg"
                   />
                 </div>
               )}
@@ -633,7 +639,7 @@ export function ItemDrawer() {
                   onChange={(e) => setTagsInput(e.target.value)}
                   placeholder="react, typescript, ui"
                   disabled={isSaving}
-                  className="h-9 text-sm font-mono"
+                  className="h-9 text-xs sm:text-sm font-mono bg-background/60 border-border/70 rounded-lg"
                 />
                 <p className="text-[11px] text-muted-foreground">
                   Separate tags with commas. Tags will be updated on save.
@@ -737,22 +743,19 @@ export function ItemDrawer() {
                     <div className="h-3.5 w-1/3 bg-zinc-800 rounded" />
                   </div>
                 ) : item?.content ? (
-                  <div className="rounded-xl border border-border/60 bg-zinc-950/90 p-3.5 sm:p-4 font-mono text-xs overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <tbody>
-                        {item.content.split("\n").map((line, idx) => (
-                          <tr key={idx} className="leading-relaxed group/line">
-                            <td className="w-8 select-none pr-3 sm:pr-4 text-right text-zinc-500/60 align-top tabular-nums text-[11px]">
-                              {idx + 1}
-                            </td>
-                            <td className="whitespace-pre text-zinc-200 font-mono align-top text-xs">
-                              {line || " "}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  lowerType === "snippet" || lowerType === "command" ? (
+                    <CodeEditor
+                      value={item.content}
+                      language={item.language}
+                      readOnly={true}
+                      minHeight={70}
+                      maxHeight={400}
+                    />
+                  ) : (
+                    <div className="rounded-xl border border-border/60 bg-muted/20 p-4 font-mono text-xs whitespace-pre-wrap text-foreground leading-relaxed">
+                      {item.content}
+                    </div>
+                  )
                 ) : item?.url ? (
                   <a
                     href={item.url}

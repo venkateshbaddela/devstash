@@ -1,22 +1,38 @@
-# Current Feature
+# Current Feature: Monaco Code Editor
 
 ---
 
 ## Status
 
-Not Started
+Complete
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Create reusable `CodeEditor` component using Monaco Editor with dark theme matching Devstash design.
+- Replace `Textarea` / static code view with `CodeEditor` for `snippet` and `command` item types only.
+- Keep `Textarea` for notes, prompts, and other non-code item types.
+- Add macOS-style window dots (red, yellow, green) at the top of the editor header.
+- Add quick copy button in the editor header with visual feedback ("Copied!").
+- Display active programming language in the editor header next to the copy button.
+- Support both display (read-only) and edit modes across components (`ItemDrawer` view & edit modes, `CreateItemDialog`).
+- Make editor height fluid with a maximum height of 400px and custom styled scrollbars matching the dark theme.
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- Spec source: `context/features/code-editor-spec.md`
+- Target components to integrate:
+  - `src/components/items/item-drawer.tsx`:
+    - Display / Read-only view: replace static line-numbered table with read-only `CodeEditor` for snippets and commands.
+    - Edit mode: replace `<Textarea>` with editable `CodeEditor` for snippets and commands.
+  - `src/components/items/create-item-dialog.tsx`:
+    - Replace `<Textarea>` content field with `CodeEditor` when selected type is `snippet` or `command`.
+- Non-code types (`note`, `prompt`, etc.) must continue using standard `<Textarea>`.
+- Client-side execution: Monaco Editor requires browser environment; ensure dynamic/client-safe loading (e.g. `@monaco-editor/react` or lazy loading) without Next.js SSR hydration errors.
+- Editor chrome: macOS window dots (red `#ff5f56`, yellow `#ffbd2e`, green `#27c93f`), header bar with language label and quick copy button, smooth dark theme integration.
 
 ---
 

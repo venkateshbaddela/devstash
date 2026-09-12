@@ -86,6 +86,14 @@ export const CREATION_ITEM_TYPES = [
 
 export type CreationItemType = (typeof CREATION_ITEM_TYPES)[number];
 
+export const TYPE_SINGULAR_LABELS: Record<CreationItemType, string> = {
+  snippet: "Snippet",
+  prompt: "Prompt",
+  command: "Command",
+  note: "Note",
+  link: "Link",
+};
+
 /**
  * Zod validation schema for creating a new item.
  * Validates polymorphic requirements based on the selected item type.

@@ -7,6 +7,14 @@ import { getItemsByType, resolveItemTypeBySlug } from "@/lib/db/items";
 import { ItemCard } from "@/components/dashboard/item-card";
 import { ItemTypeIcon } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
+import {
+  CreateTypeItemButton,
+  TYPE_SINGULAR_LABELS,
+} from "@/components/items/create-type-item-button";
+import {
+  CreationItemType,
+  CREATION_ITEM_TYPES,
+} from "@/lib/validations/items";
 
 interface ItemTypePageProps {
   params: Promise<{ type: string }>;
@@ -43,55 +51,75 @@ export default async function ItemTypePage({ params }: ItemTypePageProps) {
     notFound();
   }
 
+  const normalizedType = itemType.name.toLowerCase().trim().replace(/s$/, "");
+  const isCreatable = CREATION_ITEM_TYPES.includes(
+    normalizedType as CreationItemType
+  );
+  const singularName =
+    TYPE_SINGULAR_LABELS[normalizedType as CreationItemType] ||
+    itemType.name.charAt(0).toUpperCase() + itemType.name.slice(1);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-10">
-      <div>
-        {/* Breadcrumb */}
-        <nav
-          aria-label="Breadcrumb"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3"
-        >
-          <Link
-            href="/dashboard"
-            className="hover:text-foreground transition-colors"
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          {/* Breadcrumb */}
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3"
           >
-            Dashboard
-          </Link>
-          <ChevronRight className="size-3 text-muted-foreground/60 shrink-0" />
-          <span className="text-foreground font-medium">
-            {itemType.displayName}
-          </span>
-        </nav>
-
-        {/* Header with Type Icon, Title, and Pro Badge */}
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-muted/40 shrink-0">
-            <ItemTypeIcon
-              name={itemType.icon || itemType.name}
-              className="size-5"
-              style={{ color: itemType.color }}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <Link
+              href="/dashboard"
+              className="hover:text-foreground transition-colors"
+            >
+              Dashboard
+            </Link>
+            <ChevronRight className="size-3 text-muted-foreground/60 shrink-0" />
+            <span className="text-foreground font-medium">
               {itemType.displayName}
-            </h1>
-            {itemType.isPro && (
-              <Badge
-                variant="secondary"
-                className="h-5 px-1.5 text-[9px] font-semibold uppercase tracking-normal leading-none rounded-lg border border-border/80 bg-muted/60 text-muted-foreground"
-              >
-                PRO
-              </Badge>
-            )}
+            </span>
+          </nav>
+
+          {/* Header with Type Icon, Title, and Pro Badge */}
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-muted/40 shrink-0">
+              <ItemTypeIcon
+                name={itemType.icon || itemType.name}
+                className="size-5"
+                style={{ color: itemType.color }}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                {itemType.displayName}
+              </h1>
+              {itemType.isPro && (
+                <Badge
+                  variant="secondary"
+                  className="h-5 px-1.5 text-[9px] font-semibold uppercase tracking-normal leading-none rounded-lg border border-border/80 bg-muted/60 text-muted-foreground"
+                >
+                  PRO
+                </Badge>
+              )}
+            </div>
           </div>
+
+          {/* Subtitle / Counter */}
+          <p className="text-sm text-muted-foreground mt-1.5 pl-12">
+            {items.length} {items.length === 1 ? "item" : "items"} stored in your
+            library
+          </p>
         </div>
 
-        {/* Subtitle / Counter */}
-        <p className="text-sm text-muted-foreground mt-1.5 pl-12">
-          {items.length} {items.length === 1 ? "item" : "items"} stored in your
-          library
-        </p>
+        {/* Type-specific Action Button */}
+        {isCreatable && (
+          <div className="shrink-0 pl-12 sm:pl-0">
+            <CreateTypeItemButton
+              type={itemType.name}
+              customLabel={`New ${singularName}`}
+            />
+          </div>
+        )}
       </div>
 
       {/* Responsive Grid: 1 column on mobile, 2 columns on tablet, 3 columns on larger screens */}
@@ -114,9 +142,16 @@ export default async function ItemTypePage({ params }: ItemTypePageProps) {
             No {itemType.displayName.toLowerCase()} found yet
           </p>
           <p className="text-xs text-muted-foreground max-w-sm">
-            Items saved under this type will show up here. Click &quot;+ New
-            Item&quot; to add your first {itemType.name}.
+            Items saved under this type will show up here.
           </p>
+          {isCreatable && (
+            <div className="mt-2">
+              <CreateTypeItemButton
+                type={itemType.name}
+                customLabel={`Create your first ${singularName}`}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

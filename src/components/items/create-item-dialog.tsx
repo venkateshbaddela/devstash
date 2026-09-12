@@ -40,6 +40,7 @@ import {
   CREATION_ITEM_TYPES,
 } from "@/lib/validations/items";
 import { cn } from "cn";
+import { CodeEditor } from "@/components/ui/code-editor";
 import type { ItemDetail } from "@/lib/db/items";
 
 interface CreateItemDialogProps {
@@ -249,7 +250,7 @@ export function CreateItemDialog({
               <DropdownMenu>
                 <DropdownMenuTrigger
                   type="button"
-                  className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl border border-border/70 bg-background/50 hover:bg-muted/40 transition-colors cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-border/70 bg-background/60 dark:bg-input/30 hover:bg-muted/40 transition-colors cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
@@ -277,7 +278,7 @@ export function CreateItemDialog({
 
                 <DropdownMenuContent
                   align="start"
-                  className="w-(--anchor-width) min-w-[280px] max-h-72 overflow-y-auto p-1.5 rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-xl"
+                  className="w-(--anchor-width) min-w-[280px] max-h-72 overflow-y-auto p-1.5 rounded-lg border border-border/80 bg-popover text-popover-foreground shadow-xl"
                 >
                   <DropdownMenuLabel className="px-2 py-1 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                     Select Item Type
@@ -361,7 +362,7 @@ export function CreateItemDialog({
                 }
                 maxLength={255}
                 required
-                className="h-9 text-xs sm:text-sm bg-background/50 border-border/70"
+                className="h-9 text-xs sm:text-sm bg-background/60 border-border/70 rounded-lg"
                 autoFocus
               />
             </div>
@@ -383,7 +384,7 @@ export function CreateItemDialog({
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://nextjs.org/docs"
                   required
-                  className="h-9 text-xs sm:text-sm font-mono bg-background/50 border-border/70"
+                  className="h-9 text-xs sm:text-sm font-mono bg-background/60 border-border/70 rounded-lg"
                 />
               </div>
             )}
@@ -407,7 +408,7 @@ export function CreateItemDialog({
                       : "typescript, javascript, python, rust, go"
                   }
                   maxLength={50}
-                  className="h-9 text-xs sm:text-sm font-mono bg-background/50 border-border/70"
+                  className="h-9 text-xs sm:text-sm font-mono bg-background/60 border-border/70 rounded-lg"
                 />
               </div>
             )}
@@ -427,17 +428,26 @@ export function CreateItemDialog({
                     ? "Note Content"
                     : "Code Snippet"}
                 </label>
-                <textarea
-                  id="item-content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder={activeConfig.contentPlaceholder}
-                  rows={isCodeOrCommand ? 6 : 5}
-                  className={cn(
-                    "w-full rounded-xl border border-border/70 bg-background/50 p-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20 resize-y",
-                    isCodeOrCommand && "font-mono"
-                  )}
-                />
+                {isCodeOrCommand ? (
+                  <CodeEditor
+                    value={content}
+                    onChange={setContent}
+                    language={language}
+                    readOnly={false}
+                    minHeight={140}
+                    maxHeight={400}
+                    placeholder={activeConfig.contentPlaceholder}
+                  />
+                ) : (
+                  <textarea
+                    id="item-content"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder={activeConfig.contentPlaceholder}
+                    rows={5}
+                    className="w-full min-h-[140px] rounded-lg border border-border/70 bg-background/60 dark:bg-input/30 p-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 resize-y transition-colors"
+                  />
+                )}
               </div>
             )}
 
@@ -456,7 +466,7 @@ export function CreateItemDialog({
                 placeholder="Optional summary or notes about this item..."
                 rows={2}
                 maxLength={2000}
-                className="w-full rounded-xl border border-border/70 bg-background/50 p-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20 resize-y"
+                className="w-full min-h-[76px] rounded-lg border border-border/70 bg-background/60 dark:bg-input/30 p-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 resize-y transition-colors"
               />
             </div>
 
@@ -473,7 +483,7 @@ export function CreateItemDialog({
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="react, auth, hook, utils (comma separated)"
-                className="h-9 text-xs sm:text-sm bg-background/50 border-border/70"
+                className="h-9 text-xs sm:text-sm font-mono bg-background/60 border-border/70 rounded-lg"
               />
             </div>
 
