@@ -23,6 +23,7 @@
     "test:drawer": "tsx scripts/test-item-drawer.ts",
     "test:edit": "tsx scripts/test-item-edit.ts",
     "test:delete": "tsx scripts/test-item-delete.ts",
+    "test:create": "tsx scripts/test-item-create.ts",
     "studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

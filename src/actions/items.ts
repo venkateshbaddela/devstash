@@ -6,9 +6,10 @@ import { getDefaultUserId } from "@/lib/db/collections";
 import {
   updateItem as updateItemDb,
   deleteItem as deleteItemDb,
+  createItem as createItemDb,
   type ItemDetail,
 } from "@/lib/db/items";
-import { updateItemSchema } from "@/lib/validations/items";
+import { updateItemSchema, createItemSchema } from "@/lib/validations/items";
 
 export interface ActionResult<T = unknown> {
   success: boolean;
@@ -164,4 +165,75 @@ export async function deleteItem(
 ): Promise<ActionResult<{ id: string }>> {
   return deleteItemAction(itemId);
 }
+
+/**
+ * Server action to create a new item.
+ * Validates payload with createItemSchema Zod schema, checks authentication,
+ * writes to PostgreSQL via createItem query, and revalidates dashboard/items paths.
+ */
+export async function createItemAction(
+  input: unknown
+): Promise<ActionResult<ItemDetail>> {
+  try {
+    const parseResult = createItemSchema.safeParse(input);
+    if (!parseResult.success) {
+      const errorMsg =
+        parseResult.error.issues[0]?.message || "Validation failed.";
+      return { success: false, error: errorMsg };
+    }
+
+    let session = null;
+    try {
+      session = await auth();
+    } catch {
+      // In tests or non-request context
+    }
+
+    const userId = session?.user?.id ?? (await getDefaultUserId());
+    if (!userId) {
+      return {
+        success: false,
+        error: "Unauthorized. You must be signed in to perform this action.",
+      };
+    }
+
+    const newItem = await createItemDb(userId, parseResult.data);
+    if (!newItem) {
+      return {
+        success: false,
+        error: "Failed to create item. Please verify the selected item type.",
+      };
+    }
+
+    // Revalidate paths so dashboard and items lists reflect newly created item
+    try {
+      revalidatePath("/dashboard");
+      revalidatePath("/items", "layout");
+    } catch {
+      // Ignored outside Next.js request lifecycle
+    }
+
+    return {
+      success: true,
+      data: newItem,
+      message: "Item created successfully.",
+    };
+  } catch (error) {
+    console.error("Error in createItemAction:", error);
+    return {
+      success: false,
+      error: "An unexpected error occurred while creating the item.",
+    };
+  }
+}
+
+/**
+ * Alias for createItemAction matching spec conventions.
+ */
+export async function createItem(
+  input: unknown
+): Promise<ActionResult<ItemDetail>> {
+  return createItemAction(input);
+}
+
 

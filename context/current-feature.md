@@ -1,22 +1,42 @@
-# Current Feature
+# Current Feature: Item Create
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Implement `createItemSchema` Zod validation in `src/lib/validations/items.ts` supporting creation item types (`snippet`, `prompt`, `command`, `note`, `link`).
+- Implement `createItem` query function in `src/lib/db/items.ts` creating the item, resolving `itemTypeId`, handling transactional tag creation/association (`Tag`, `ItemTag`), and returning `ItemDetail`.
+- Implement `createItemAction` Server Action in `src/actions/items.ts` with NextAuth session validation, demo user fallback, Zod parsing, path cache revalidation (`/dashboard`, `/items`), and standard `ActionResult<ItemDetail>` response structure.
+- Build accessible `CreateItemDialog` component in `src/components/items/create-item-dialog.tsx` using shadcn `Dialog`.
+- Implement dynamic polymorphic form fields based on selected item type:
+  - Type selector with icons for `snippet`, `prompt`, `command`, `note`, `link`.
+  - Common fields for all types: Title (required), Description (optional), Tags (comma-separated).
+  - `snippet` / `command`: Content and Language fields.
+  - `prompt` / `note`: Content textarea field.
+  - `link`: URL field (required).
+- Connect the "New Item" button in `TopBar` (`src/components/layout/top-bar.tsx`) to trigger `CreateItemDialog`.
+- Provide smooth UX: disabled submission when title/URL invalid, spinner during submission, inline error banner, form reset on cancel/close, success toast notification, and list refresh (`router.refresh()`).
+- Write Vitest unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` covering item creation and validation.
+- Add database integration test in `scripts/test-item-create.ts` (`npm run test:create`).
+- Verify zero ESLint errors/warnings (`npm run lint`), passing tests (`npm test`), and successful build (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- **Specification Reference:** Sourced directly from `context/features/item-create-spec.md`.
+- **Trigger Location:** "New Item" button in the top navigation bar (`src/components/layout/top-bar.tsx`).
+- **Modal Component:** Use shadcn `Dialog` component (`@base-ui/react/dialog`).
+- **Polymorphic Type Selection:** Supported types are `snippet`, `prompt`, `command`, `note`, and `link`. Selecting a type adapts visible inputs dynamically.
+- **Content Storage:** Content type maps to `ContentType.TEXT` for text items and `ContentType.URL` for links.
+- **Tag Association:** Tags should be trimmed, non-empty, deduplicated, and upserted per user, linking to the item through `ItemTag`.
+- **Success Feedback:** On successful creation, close the modal, display a success toast ("Item created successfully."), and trigger `router.refresh()` to update list views.
 
 ---
 

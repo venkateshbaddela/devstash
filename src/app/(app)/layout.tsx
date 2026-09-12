@@ -9,11 +9,11 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <DashboardLayout>
-      <ItemDrawerProvider>
+    <ItemDrawerProvider>
+      <DashboardLayout>
         {children}
         <ItemDrawer />
-      </ItemDrawerProvider>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ItemDrawerProvider>
   );
 }

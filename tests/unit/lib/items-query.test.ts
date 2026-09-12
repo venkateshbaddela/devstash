@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getItemById, updateItem, deleteItem } from "@/lib/db/items";
+import { getItemById, updateItem, deleteItem, createItem } from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
 
 const mockTx = {
@@ -12,11 +12,16 @@ const mockTx = {
   },
   item: {
     update: vi.fn(),
+    create: vi.fn(),
+    findUnique: vi.fn(),
   },
 };
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    itemType: {
+      findFirst: vi.fn(),
+    },
     item: {
       findFirst: vi.fn(),
       update: vi.fn(),
@@ -357,6 +362,152 @@ describe("Item Database Queries", () => {
       expect(prisma.item.delete).toHaveBeenCalledWith({
         where: { id: "item-123" },
       });
+    });
+  });
+
+  describe("createItem Query Function", () => {
+    it("returns null if target user cannot be resolved", async () => {
+      const { getDefaultUserId } = await import("@/lib/db/collections");
+      vi.mocked(getDefaultUserId).mockResolvedValueOnce(null);
+
+      const res = await createItem(null, {
+        type: "snippet",
+        title: "Test Snippet",
+      });
+
+      expect(res).toBe(null);
+    });
+
+    it("returns null if the system item type cannot be found", async () => {
+      vi.mocked(prisma.itemType.findFirst).mockResolvedValue(null);
+
+      const res = await createItem("user-123", {
+        type: "unknown-type",
+        title: "Invalid Type Item",
+      });
+
+      expect(res).toBe(null);
+      expect(prisma.itemType.findFirst).toHaveBeenCalledWith({
+        where: {
+          name: "unknown-type",
+          OR: [{ userId: "user-123" }, { userId: null }],
+        },
+      });
+    });
+
+    it("creates a snippet item with TEXT contentType and links tags", async () => {
+      vi.mocked(prisma.itemType.findFirst).mockResolvedValue({
+        id: "type-snippet-id",
+        name: "snippet",
+        icon: "Code",
+        color: "#3b82f6",
+      } as unknown as Awaited<ReturnType<typeof prisma.itemType.findFirst>>);
+
+      mockTx.item.create.mockResolvedValue({
+        id: "created-snippet-123",
+      });
+
+      mockTx.tag.upsert.mockResolvedValue({
+        id: "tag-react-id",
+        name: "react",
+        userId: "user-123",
+      });
+
+      mockTx.item.findUnique.mockResolvedValue({
+        ...mockDbItem,
+        id: "created-snippet-123",
+        title: "New Snippet",
+        tags: [{ tag: { id: "tag-react-id", name: "react" } }],
+      });
+
+      const res = await createItem("user-123", {
+        type: "snippet",
+        title: "New Snippet",
+        content: "const a = 1;",
+        language: "typescript",
+        tags: ["react"],
+      });
+
+      expect(mockTx.item.create).toHaveBeenCalledWith({
+        data: {
+          title: "New Snippet",
+          description: null,
+          contentType: "TEXT",
+          content: "const a = 1;",
+          url: null,
+          language: "typescript",
+          userId: "user-123",
+          itemTypeId: "type-snippet-id",
+        },
+      });
+
+      expect(mockTx.tag.upsert).toHaveBeenCalledWith({
+        where: {
+          userId_name: {
+            userId: "user-123",
+            name: "react",
+          },
+        },
+        create: {
+          name: "react",
+          userId: "user-123",
+        },
+        update: {},
+      });
+
+      expect(mockTx.itemTag.create).toHaveBeenCalledWith({
+        data: {
+          itemId: "created-snippet-123",
+          tagId: "tag-react-id",
+        },
+      });
+
+      expect(res).not.toBeNull();
+      expect(res?.id).toBe("created-snippet-123");
+    });
+
+    it("creates a link item with URL contentType", async () => {
+      vi.mocked(prisma.itemType.findFirst).mockResolvedValue({
+        id: "type-link-id",
+        name: "link",
+        icon: "Link2",
+        color: "#f97316",
+      } as unknown as Awaited<ReturnType<typeof prisma.itemType.findFirst>>);
+
+      mockTx.item.create.mockResolvedValue({
+        id: "created-link-123",
+      });
+
+      mockTx.item.findUnique.mockResolvedValue({
+        ...mockDbItem,
+        id: "created-link-123",
+        title: "DevStash Documentation",
+        contentType: "URL",
+        url: "https://devstash.io/docs",
+        tags: [],
+      });
+
+      const res = await createItem("user-123", {
+        type: "link",
+        title: "DevStash Documentation",
+        url: "https://devstash.io/docs",
+      });
+
+      expect(mockTx.item.create).toHaveBeenCalledWith({
+        data: {
+          title: "DevStash Documentation",
+          description: null,
+          contentType: "URL",
+          content: null,
+          url: "https://devstash.io/docs",
+          language: null,
+          userId: "user-123",
+          itemTypeId: "type-link-id",
+        },
+      });
+
+      expect(res).not.toBeNull();
+      expect(res?.id).toBe("created-link-123");
     });
   });
 });

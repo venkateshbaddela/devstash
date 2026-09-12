@@ -667,5 +667,140 @@ export async function deleteItem(
   return true;
 }
 
+export interface CreateItemData {
+  title: string;
+  type: string;
+  description?: string | null;
+  content?: string | null;
+  url?: string | null;
+  language?: string | null;
+  tags?: string[];
+  collectionId?: string | null;
+}
+
+/**
+ * Creates a new item in the database for the specified user.
+ * Resolves system item type, creates tags and links atomically via transaction,
+ * and returns the full ItemDetail.
+ */
+export async function createItem(
+  userId: string | null | undefined,
+  data: CreateItemData
+): Promise<ItemDetail | null> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+  if (!targetUserId) return null;
+
+  const typeLower = data.type.toLowerCase().trim();
+  const itemType = await prisma.itemType.findFirst({
+    where: {
+      name: typeLower,
+      OR: [{ userId: targetUserId }, { userId: null }],
+    },
+  });
+
+  if (!itemType) return null;
+
+  const contentType = typeLower === "link" ? "URL" : "TEXT";
+
+  return await prisma.$transaction(
+    async (tx) => {
+      const created = await tx.item.create({
+        data: {
+          title: data.title.trim(),
+          description: data.description?.trim() || null,
+          contentType,
+          content: data.content !== undefined ? data.content : null,
+          url: data.url?.trim() || null,
+          language: data.language?.trim() || null,
+          userId: targetUserId,
+          itemTypeId: itemType.id,
+          ...(data.collectionId
+            ? {
+                collections: {
+                  create: [{ collectionId: data.collectionId }],
+                },
+              }
+            : {}),
+        },
+      });
+
+      if (Array.isArray(data.tags)) {
+        const uniqueTagNames = Array.from(
+          new Set(
+            data.tags
+              .map((t) => t.trim())
+              .filter((t) => t.length > 0)
+          )
+        );
+
+        for (const name of uniqueTagNames) {
+          const tag = await tx.tag.upsert({
+            where: {
+              userId_name: {
+                userId: targetUserId,
+                name,
+              },
+            },
+            create: {
+              name,
+              userId: targetUserId,
+            },
+            update: {},
+          });
+
+          await tx.itemTag.create({
+            data: {
+              itemId: created.id,
+              tagId: tag.id,
+            },
+          });
+        }
+      }
+
+      const fullItem = await tx.item.findUnique({
+        where: { id: created.id },
+        include: {
+          itemType: {
+            select: {
+              id: true,
+              name: true,
+              icon: true,
+              color: true,
+            },
+          },
+          tags: {
+            include: {
+              tag: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          collections: {
+            include: {
+              collection: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return fullItem ? mapToItemDetail(fullItem) : null;
+    },
+    {
+      timeout: 15000,
+      maxWait: 10000,
+    }
+  );
+}
+
+
 
 
