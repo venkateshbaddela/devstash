@@ -1,37 +1,22 @@
-# Current Feature: Item Drawer
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- Implement Prisma query function in `src/lib/db/items.ts` to fetch full item details by ID scoped to authenticated user.
-- Create API route `GET /api/items/[id]` with authentication checks, returning full item data.
-- Build client-side drawer state management wrapper / context to manage drawer open/close and active item state without breaking Server Component architecture.
-- Create right-side slide-in `ItemDrawer` component using shadcn `Sheet` (`SheetContent side="right"`).
-- Implement drawer loading skeleton state while fetching full item details on click.
-- Render drawer header with item type icon, title, type badge, and optional language badge.
-- Render action bar with Favorite (star icon, yellow when active), Pin, Copy, Edit (pencil icon), and Delete (trash icon, right-aligned) matching reference design.
-- Render item detail sections: Description, Content display, Tags, Collections, and Metadata Details (created/updated dates).
-- Connect `ItemCard` click events across Dashboard (pinned & recent items) and Items List (`/items/[type]`) to open drawer and fetch data.
-- Ensure test coverage with Vitest unit tests, clean ESLint check (`npm run lint`), and clean production build (`npm run build`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- Spec source: [item-drawer-spec.md](file:///workspaces/devstash/context/features/item-drawer-spec.md)
-- Reference screenshot: [dashboard-ui-drawer.png](file:///workspaces/devstash/context/screenshots/dashboard-ui-drawer.png)
-- Primary detail view: right-side slide-in drawer using shadcn `Sheet` (no separate item page).
-- Snappy fetch-on-click via `/api/items/[id]` with skeleton loading state.
-- Card data (title, description, tags, etc.) is rendered initially by Server Components; full details (content, collections, dates, language) fetched on demand.
-- Extras like code editor and item-specific complex editors will come later; focus on drawer details display and action bar layout.
-- Action bar layout from screenshot: Left group (Favorite, Pin, Copy), Edit icon button, right-aligned Delete (trash) button.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -273,3 +258,20 @@ In Progress
 - Preserved single-column presentation on mobile and two-column presentation on tablets (`md:`).
 - Verified `ItemCard` visual components (Lucide type icons, color accents, tags, star/pin badges, dates) scale cleanly in 3-column rows without text overflow.
 - Verified 100% passing across Vitest unit tests (`npm test` - 61/61 passed), integration tests (`npm run test:items` - 47/47 passed), ESLint (`npm run lint`), and Next.js production build (`npm run build`).
+
+### Item Detail Drawer (2026-09-12)
+
+- Implemented right-side slide-in `ItemDrawer` component using shadcn `Sheet` (`SheetContent side="right"`) as the primary item detail view.
+- Added `getItemById` in `src/lib/db/items.ts` fetching full item relations (types, tags, collections), date formatting, BigInt serialization safety, and user scoping with React `cache()`.
+- Created dynamic API route handler `GET /api/items/[id]` in `src/app/api/items/[id]/route.ts` with NextAuth session verification, demo user fallback, and HTTP error responses.
+- Implemented `ItemDrawerProvider` and `useItemDrawer` / `useOptionalItemDrawer` context in `src/components/items/item-drawer-context.tsx` ensuring clean separation without circular module dependencies.
+- Added progressive loading skeleton to `ItemDrawer` displaying instantaneous preview metadata from card clicks while fetching full details from the API.
+- Rendered drawer header with Lucide type icon, item title, and color-coded item type badge with CSS `color-mix` styling.
+- Rendered full action bar matching reference design: Favorite (star icon toggling yellow fill), Pin, Copy (with clipboard write and "Copied!" feedback), Edit, and right-aligned Delete (trash icon).
+- Rendered item detail sections: Description, syntax-style line-numbered code table for content, URL external link cards, file metadata previews, tags with tag icon, collections with folder icon and accent color, and Created/Updated timestamps.
+- Enhanced `ItemCard` (`src/components/dashboard/item-card.tsx`) with client click and keyboard interactions (`Enter`/`Space`) triggering drawer opening across Dashboard (`PinnedItems`, `RecentItems`) and Items List (`/items/[type]`).
+- Wrapped `(app)` route layout (`src/app/(app)/layout.tsx`) in `ItemDrawerProvider` and rendered `ItemDrawer` without converting Server Components into Client Components.
+- Added unit test suites in `tests/unit/lib/items-query.test.ts` and `tests/unit/lib/items-api.test.ts` (73/73 passing unit tests).
+- Added end-to-end database integration test in `scripts/test-item-drawer.ts` (`npm run test:drawer` - 20/20 passing assertions).
+- Verified with Playwright visual testing across Dashboard and Items List views, 0 ESLint errors/warnings (`npm run lint`), and clean production build (`npm run build`).
+
