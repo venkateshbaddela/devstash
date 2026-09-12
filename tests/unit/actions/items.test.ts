@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import type { Session } from "next-auth";
-import { updateItemAction } from "@/actions/items";
+import { updateItemAction, deleteItemAction, deleteItem } from "@/actions/items";
 import { updateItemSchema } from "@/lib/validations/items";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { updateItem as updateItemDb } from "@/lib/db/items";
+import {
+  updateItem as updateItemDb,
+  deleteItem as deleteItemDb,
+} from "@/lib/db/items";
 import { getDefaultUserId } from "@/lib/db/collections";
 
 vi.mock("next/cache", () => ({
@@ -21,6 +24,7 @@ vi.mock("@/lib/db/collections", () => ({
 
 vi.mock("@/lib/db/items", () => ({
   updateItem: vi.fn(),
+  deleteItem: vi.fn(),
 }));
 
 const mockAuth = auth as unknown as Mock<() => Promise<Session | null>>;
@@ -240,6 +244,93 @@ describe("Items Server Actions & Validation", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("An unexpected error occurred");
+    });
+  });
+
+  describe("deleteItemAction", () => {
+    it("fails when itemId is empty or whitespace", async () => {
+      const result1 = await deleteItemAction("");
+      expect(result1.success).toBe(false);
+      expect(result1.error).toContain("Item ID is required");
+
+      const result2 = await deleteItemAction("   ");
+      expect(result2.success).toBe(false);
+      expect(result2.error).toContain("Item ID is required");
+    });
+
+    it("fails when user is unauthorized and no default demo user exists", async () => {
+      mockAuth.mockResolvedValue(null);
+      vi.mocked(getDefaultUserId).mockResolvedValueOnce(null);
+
+      const result = await deleteItemAction("item-1");
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Unauthorized");
+    });
+
+    it("uses authenticated session user ID when available", async () => {
+      mockAuth.mockResolvedValue(createMockSession("auth-user-789"));
+      vi.mocked(deleteItemDb).mockResolvedValue(true);
+
+      const result = await deleteItemAction("item-123");
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({ id: "item-123" });
+      expect(deleteItemDb).toHaveBeenCalledWith("item-123", "auth-user-789");
+    });
+
+    it("falls back to default demo user ID when session is unauthenticated", async () => {
+      mockAuth.mockResolvedValue(null);
+      vi.mocked(getDefaultUserId).mockResolvedValue("demo-user-id");
+      vi.mocked(deleteItemDb).mockResolvedValue(true);
+
+      const result = await deleteItemAction("item-123");
+
+      expect(result.success).toBe(true);
+      expect(deleteItemDb).toHaveBeenCalledWith("item-123", "demo-user-id");
+    });
+
+    it("returns error when item is not found or does not belong to user", async () => {
+      mockAuth.mockResolvedValue(createMockSession("user-123"));
+      vi.mocked(deleteItemDb).mockResolvedValue(false);
+
+      const result = await deleteItemAction("non-existent-id");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Item not found or you do not have permission to delete it");
+    });
+
+    it("successfully deletes item, triggers path revalidations, and returns success response", async () => {
+      mockAuth.mockResolvedValue(createMockSession("user-123"));
+      vi.mocked(deleteItemDb).mockResolvedValue(true);
+
+      const result = await deleteItemAction("item-456");
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({ id: "item-456" });
+      expect(result.message).toBe("Item deleted successfully.");
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
+      expect(revalidatePath).toHaveBeenCalledWith("/items", "layout");
+    });
+
+    it("handles database exceptions gracefully", async () => {
+      mockAuth.mockResolvedValue(createMockSession("user-123"));
+      vi.mocked(deleteItemDb).mockRejectedValue(new Error("Database connection failure"));
+
+      const result = await deleteItemAction("item-123");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("An unexpected error occurred while deleting the item");
+    });
+
+    it("verifies deleteItem alias behaves identically to deleteItemAction", async () => {
+      mockAuth.mockResolvedValue(createMockSession("user-123"));
+      vi.mocked(deleteItemDb).mockResolvedValue(true);
+
+      const result = await deleteItem("item-999");
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({ id: "item-999" });
+      expect(result.message).toBe("Item deleted successfully.");
     });
   });
 });

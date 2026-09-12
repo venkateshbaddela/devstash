@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getItemById, updateItem } from "@/lib/db/items";
+import { getItemById, updateItem, deleteItem } from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
 
 const mockTx = {
@@ -20,6 +20,7 @@ vi.mock("@/lib/prisma", () => ({
     item: {
       findFirst: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     },
     itemTag: {
       deleteMany: vi.fn(),
@@ -305,6 +306,57 @@ describe("Item Database Queries", () => {
       });
       expect(mockTx.tag.upsert).not.toHaveBeenCalled();
       expect(result?.tags).toEqual([]);
+    });
+  });
+
+  describe("deleteItem Query Function", () => {
+    it("returns false if itemId is empty or invalid", async () => {
+      const res1 = await deleteItem("", "user-123");
+      expect(res1).toBe(false);
+
+      const res2 = await deleteItem("   ", "user-123");
+      expect(res2).toBe(false);
+    });
+
+    it("returns false if no target user can be resolved", async () => {
+      const { getDefaultUserId } = await import("@/lib/db/collections");
+      vi.mocked(getDefaultUserId).mockResolvedValueOnce(null);
+
+      const res = await deleteItem("item-123", null);
+      expect(res).toBe(false);
+    });
+
+    it("returns false if the item does not exist or does not belong to user", async () => {
+      vi.mocked(prisma.item.findFirst).mockResolvedValue(null);
+
+      const res = await deleteItem("non-existent-item", "user-123");
+
+      expect(res).toBe(false);
+      expect(prisma.item.findFirst).toHaveBeenCalledWith({
+        where: { id: "non-existent-item", userId: "user-123" },
+        select: { id: true },
+      });
+      expect(prisma.item.delete).not.toHaveBeenCalled();
+    });
+
+    it("deletes the item and returns true when item exists and belongs to user", async () => {
+      vi.mocked(prisma.item.findFirst).mockResolvedValue({
+        id: "item-123",
+      } as unknown as Awaited<ReturnType<typeof prisma.item.findFirst>>);
+      vi.mocked(prisma.item.delete).mockResolvedValue({
+        id: "item-123",
+      } as unknown as Awaited<ReturnType<typeof prisma.item.delete>>);
+
+      const res = await deleteItem("item-123", "user-123");
+
+      expect(res).toBe(true);
+      expect(prisma.item.findFirst).toHaveBeenCalledWith({
+        where: { id: "item-123", userId: "user-123" },
+        select: { id: true },
+      });
+      expect(prisma.item.delete).toHaveBeenCalledWith({
+        where: { id: "item-123" },
+      });
     });
   });
 });

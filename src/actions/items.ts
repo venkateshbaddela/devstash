@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { getDefaultUserId } from "@/lib/db/collections";
-import { updateItem as updateItemDb, type ItemDetail } from "@/lib/db/items";
+import {
+  updateItem as updateItemDb,
+  deleteItem as deleteItemDb,
+  type ItemDetail,
+} from "@/lib/db/items";
 import { updateItemSchema } from "@/lib/validations/items";
 
 export interface ActionResult<T = unknown> {
@@ -93,3 +97,71 @@ export async function updateItem(
 ): Promise<ActionResult<ItemDetail>> {
   return updateItemAction(itemId, input);
 }
+
+/**
+ * Server action to delete an existing item.
+ * Checks user authentication and ownership, deletes item from the database,
+ * and revalidates dashboard and items pages.
+ */
+export async function deleteItemAction(
+  itemId: string
+): Promise<ActionResult<{ id: string }>> {
+  try {
+    if (!itemId || typeof itemId !== "string" || !itemId.trim()) {
+      return { success: false, error: "Item ID is required." };
+    }
+
+    let session = null;
+    try {
+      session = await auth();
+    } catch {
+      // In tests or non-request context
+    }
+
+    const userId = session?.user?.id ?? (await getDefaultUserId());
+    if (!userId) {
+      return {
+        success: false,
+        error: "Unauthorized. You must be signed in to perform this action.",
+      };
+    }
+
+    const deleted = await deleteItemDb(itemId.trim(), userId);
+    if (!deleted) {
+      return {
+        success: false,
+        error: "Item not found or you do not have permission to delete it.",
+      };
+    }
+
+    // Revalidate paths so dashboard and items list reflect deletion
+    try {
+      revalidatePath("/dashboard");
+      revalidatePath("/items", "layout");
+    } catch {
+      // Ignored outside Next.js request lifecycle (e.g. standalone scripts or testing)
+    }
+
+    return {
+      success: true,
+      data: { id: itemId.trim() },
+      message: "Item deleted successfully.",
+    };
+  } catch (error) {
+    console.error("Error in deleteItemAction:", error);
+    return {
+      success: false,
+      error: "An unexpected error occurred while deleting the item.",
+    };
+  }
+}
+
+/**
+ * Alias for deleteItemAction matching spec conventions.
+ */
+export async function deleteItem(
+  itemId: string
+): Promise<ActionResult<{ id: string }>> {
+  return deleteItemAction(itemId);
+}
+

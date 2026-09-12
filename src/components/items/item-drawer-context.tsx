@@ -6,8 +6,18 @@ import React, {
   useState,
   useCallback,
   useTransition,
+  useRef,
+  useEffect,
 } from "react";
+import { Check, AlertCircle, X } from "lucide-react";
+import { cn } from "cn";
 import type { DashboardItem, ItemDetail } from "@/lib/db/items";
+
+export interface ToastState {
+  id: string;
+  type: "success" | "error";
+  message: string;
+}
 
 interface ItemDrawerContextValue {
   isOpen: boolean;
@@ -20,6 +30,7 @@ interface ItemDrawerContextValue {
   toggleFavorite: () => void;
   togglePin: () => void;
   setItemDetail: (item: ItemDetail) => void;
+  showToast: (type: "success" | "error", message: string) => void;
 }
 
 const ItemDrawerContext = createContext<ItemDrawerContextValue | null>(null);
@@ -46,7 +57,28 @@ export function ItemDrawerProvider({ children }: { children: React.ReactNode }) 
   const [item, setItem] = useState<ItemDetail | null>(null);
   const [previewItem, setPreviewItem] = useState<DashboardItem | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [, startTransition] = useTransition();
+
+  const showToast = useCallback((type: "success" | "error", message: string) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    const id = Date.now().toString();
+    setToast({ id, type, message });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const openItem = useCallback(
     async (itemId: string, preview?: DashboardItem) => {
@@ -125,9 +157,43 @@ export function ItemDrawerProvider({ children }: { children: React.ReactNode }) 
         toggleFavorite,
         togglePin,
         setItemDetail,
+        showToast,
       }}
     >
       {children}
+
+      {/* Floating Toast Notification Container */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-5 right-5 z-[100] max-w-sm w-auto pointer-events-none animate-in fade-in slide-in-from-bottom-3 duration-200"
+        >
+          <div
+            className={cn(
+              "pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl text-xs font-sans backdrop-blur-md",
+              toast.type === "success"
+                ? "bg-emerald-950/95 border-emerald-500/30 text-emerald-100 shadow-emerald-950/50"
+                : "bg-destructive/95 border-destructive/30 text-destructive-foreground shadow-destructive/50"
+            )}
+          >
+            {toast.type === "success" ? (
+              <Check className="size-4 shrink-0 text-emerald-400" />
+            ) : (
+              <AlertCircle className="size-4 shrink-0 text-rose-400" />
+            )}
+            <span className="font-medium leading-relaxed">{toast.message}</span>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer p-0.5 rounded-md hover:bg-white/10 transition-colors ml-1"
+              aria-label="Dismiss toast"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </ItemDrawerContext.Provider>
   );
 }

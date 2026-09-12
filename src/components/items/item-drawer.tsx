@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ItemTypeIcon } from "@/lib/icons";
 import { useItemDrawer } from "@/components/items/item-drawer-context";
+import { DeleteItemDialog } from "@/components/items/delete-item-dialog";
 import { updateItemAction } from "@/actions/items";
 import { cn } from "cn";
 
@@ -46,6 +47,7 @@ export function ItemDrawer() {
     togglePin,
     openItem,
     setItemDetail,
+    showToast: showGlobalToast,
   } = useItemDrawer();
 
   const router = useRouter();
@@ -53,6 +55,7 @@ export function ItemDrawer() {
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Form states for edit mode
   const [title, setTitle] = useState("");
@@ -215,7 +218,8 @@ export function ItemDrawer() {
     : (displayTitle || "Item Details");
 
   return (
-    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+    <>
+      <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent
         side="right"
         className={cn(
@@ -407,7 +411,9 @@ export function ItemDrawer() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="size-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                onClick={() => setIsDeleteDialogOpen(true)}
+                disabled={isLoading || !item}
+                className="size-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer disabled:opacity-40"
                 aria-label="Delete item"
               >
                 <Trash2 className="size-3.5" />
@@ -869,5 +875,19 @@ export function ItemDrawer() {
         </div>
       </SheetContent>
     </Sheet>
+
+    {displayId && (
+      <DeleteItemDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        item={{ id: displayId, title: displayTitle }}
+        onSuccess={() => {
+          closeDrawer();
+          showGlobalToast("success", "Item deleted successfully.");
+          router.refresh();
+        }}
+      />
+    )}
+  </>
   );
 }

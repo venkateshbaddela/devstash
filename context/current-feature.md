@@ -1,22 +1,34 @@
-# Current Feature
+# Current Feature: Item Deletion with Confirmation & Toast
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Implement `deleteItem(itemId: string, userId: string)` in `src/lib/db/items.ts` ensuring user ownership and database deletion.
+- Implement `deleteItemAction(itemId: string)` in `src/actions/items.ts` with NextAuth authentication, demo user fallback, input validation, and cache revalidation (`/dashboard`, `/items`).
+- Provide accessible ShadCN UI confirmation dialog (`AlertDialog` / `Dialog`) confirming destructive item deletion with item title.
+- Connect delete action in `ItemDrawer` (`src/components/items/item-drawer.tsx`) with confirmation modal, loading spinner, and error handling.
+- Display a success toast notification upon deletion and automatically close drawer and refresh list view (`router.refresh()`).
+- Write Vitest unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` for deletion logic.
+- Add database integration test script `scripts/test-item-delete.ts` validating deletion, cascade cleanup, and security authorization.
+- Verify zero ESLint errors/warnings (`npm run lint`), passing tests (`npm test`), and successful build (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- **Confirmation UX:** Must require explicit confirmation before deleting an item, clearly stating that the action cannot be undone.
+- **Visual Harmony:** Style the dialog and buttons consistent with existing shadcn/ui components (`@base-ui/react/dialog`, dark theme, red destructive variant).
+- **Toast Feedback:** Display a toast notification on successful deletion matching the existing drawer toast pattern or global notification.
+- **List Synchronization:** Upon deletion, close the drawer, clear drawer item state, and refresh underlying route data (`router.refresh()`).
+- **Database Cascade:** Prisma schema specifies `onDelete: Cascade` on `item_collections` and `item_tags`, cleanly unlinking collections and tags upon item deletion without deleting tags or types.
+- **Authorization:** Ensure items can only be deleted by their authenticated owner (or demo user).
 
 ---
 

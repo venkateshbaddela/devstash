@@ -638,5 +638,34 @@ export async function updateItem(
   });
 }
 
+/**
+ * Deletes an item belonging to the specified user.
+ * Returns true if successfully deleted, false if not found or unauthorized.
+ */
+export async function deleteItem(
+  itemId: string,
+  userId?: string | null
+): Promise<boolean> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+  if (!targetUserId || !itemId || typeof itemId !== "string" || !itemId.trim()) {
+    return false;
+  }
+
+  const cleanItemId = itemId.trim();
+
+  const existing = await prisma.item.findFirst({
+    where: { id: cleanItemId, userId: targetUserId },
+    select: { id: true },
+  });
+
+  if (!existing) return false;
+
+  await prisma.item.delete({
+    where: { id: cleanItemId },
+  });
+
+  return true;
+}
+
 
 
