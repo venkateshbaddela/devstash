@@ -1,44 +1,22 @@
-# Current Feature: Markdown Editor
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- Create reusable `MarkdownEditor` component with tabbed interface (`Write` / `Preview`) matching Devstash dark theme and `CodeEditor` styling.
-- Support both edit mode (defaulting to Write tab with Preview tab available) and display / readonly mode (showing only the rendered Preview tab).
-- Include header action with copy button (matching `CodeEditor` styling with clipboard copy and feedback).
-- Render markdown using `react-markdown` and `remark-gfm` with complete GitHub Flavored Markdown support (headings h1-h6, lists, blockquotes, links, tables, code blocks, and inline code).
-- Implement custom dark mode preview styling (e.g. `.markdown-preview`) with fluid height capped at `max 400px` (matching `CodeEditor` height behavior).
-- Replace plain textareas with `MarkdownEditor` for `note` and `prompt` item types in `CreateItemDialog`.
-- Replace plain textareas / raw text display with `MarkdownEditor` for `note` and `prompt` item types in `ItemDrawer` (both view mode in readonly and edit mode).
-- Keep `CodeEditor` unchanged for `snippet` and `command` items.
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- Spec file: [markdown-editor-spec.md](file:///workspaces/devstash/context/features/markdown-editor-spec.md)
-- Requires installing `react-markdown` and `remark-gfm`.
-- Integration Points:
-  - `CreateItemDialog` (`src/components/items/create-item-dialog.tsx`): Note and prompt content input field.
-  - `ItemDrawer` (`src/components/items/item-drawer.tsx`): Edit mode for note and prompt content field; view mode in readonly for note and prompt content display.
-  - Preserve `CodeEditor` for `snippet` and `command`.
-- Styling Details:
-  - Headings (h1-h6) visually distinct with proper sizing and weight.
-  - Code blocks with dark background and monospace font.
-  - Inline code with subtle background highlight.
-  - Lists (ordered/unordered) with proper indentation and bullets.
-  - Blockquotes with left border accent.
-  - Links in blue with hover state.
-  - Tables with borders and header background.
-  - Custom CSS class (e.g., `.markdown-preview`) for dark mode styling.
-  - Fluid height with max 400px, matching `CodeEditor` behavior.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -349,3 +327,17 @@ In Progress
 - Standardized border radius to `rounded-lg` (`var(--radius)`) across all input, textarea, dropdown, and editor fields.
 - Created `CreateTypeItemButton` component and integrated type-specific creation buttons on each `/items/[type]` page header and empty state, automatically preselecting the active type in `CreateItemDialog`.
 - Verified 100% passing across Vitest unit tests (140/140 passed), ESLint (`npm run lint`), and Next.js production build (`npm run build`).
+
+### Markdown Editor (2026-09-12)
+
+- Installed `react-markdown` (v10.1.0) and `remark-gfm` (v4.0.1) to support GitHub Flavored Markdown (tables, checklists, strikethrough, links).
+- Built reusable `MarkdownEditor` component (`src/components/ui/markdown-editor.tsx`) styled with macOS window dots, matching dark theme palette (`#09090b`), fluid auto-resizing height capped at 400px, and quick clipboard copy with temporary "Copied!" feedback and fallback support.
+- Supported tabbed interface with `Write` and `Preview` tabs: defaults to `Write` tab with `Preview` tab available in edit mode, and exclusively renders `Preview` tab in readonly mode.
+- Added comprehensive `.markdown-preview` dark theme styles to `src/app/globals.css` covering distinct headings (`h1`-`h6`), code blocks, inline code tags, blockquotes, ordered/unordered lists, links, and bordered tables.
+- Created item type helpers `isMarkdownItemType` and `isCodeItemType` in `src/lib/markdown.ts` with dedicated unit test suite (`tests/unit/lib/markdown.test.ts`).
+- Integrated `MarkdownEditor` across knowledge interfaces:
+  - `CreateItemDialog` (`src/components/items/create-item-dialog.tsx`): replaced plain textareas with `MarkdownEditor` for `note` and `prompt` types.
+  - `ItemDrawer` (`src/components/items/item-drawer.tsx`): renders `MarkdownEditor` in readonly mode for view mode and interactive Write/Preview tabs in edit mode for `note` and `prompt`.
+  - Preserved `CodeEditor` unchanged for `snippet` and `command`.
+- Verified 100% passing across Vitest unit tests (150/150 passed), database integration suites (`test:create`, `test:edit`, `test:drawer`), ESLint (`npm run lint`), and Next.js production build (`npm run build`).
+
