@@ -1,42 +1,22 @@
-# Current Feature: Item Create
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- Implement `createItemSchema` Zod validation in `src/lib/validations/items.ts` supporting creation item types (`snippet`, `prompt`, `command`, `note`, `link`).
-- Implement `createItem` query function in `src/lib/db/items.ts` creating the item, resolving `itemTypeId`, handling transactional tag creation/association (`Tag`, `ItemTag`), and returning `ItemDetail`.
-- Implement `createItemAction` Server Action in `src/actions/items.ts` with NextAuth session validation, demo user fallback, Zod parsing, path cache revalidation (`/dashboard`, `/items`), and standard `ActionResult<ItemDetail>` response structure.
-- Build accessible `CreateItemDialog` component in `src/components/items/create-item-dialog.tsx` using shadcn `Dialog`.
-- Implement dynamic polymorphic form fields based on selected item type:
-  - Type selector with icons for `snippet`, `prompt`, `command`, `note`, `link`.
-  - Common fields for all types: Title (required), Description (optional), Tags (comma-separated).
-  - `snippet` / `command`: Content and Language fields.
-  - `prompt` / `note`: Content textarea field.
-  - `link`: URL field (required).
-- Connect the "New Item" button in `TopBar` (`src/components/layout/top-bar.tsx`) to trigger `CreateItemDialog`.
-- Provide smooth UX: disabled submission when title/URL invalid, spinner during submission, inline error banner, form reset on cancel/close, success toast notification, and list refresh (`router.refresh()`).
-- Write Vitest unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` covering item creation and validation.
-- Add database integration test in `scripts/test-item-create.ts` (`npm run test:create`).
-- Verify zero ESLint errors/warnings (`npm run lint`), passing tests (`npm test`), and successful build (`npm run build`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- **Specification Reference:** Sourced directly from `context/features/item-create-spec.md`.
-- **Trigger Location:** "New Item" button in the top navigation bar (`src/components/layout/top-bar.tsx`).
-- **Modal Component:** Use shadcn `Dialog` component (`@base-ui/react/dialog`).
-- **Polymorphic Type Selection:** Supported types are `snippet`, `prompt`, `command`, `note`, and `link`. Selecting a type adapts visible inputs dynamically.
-- **Content Storage:** Content type maps to `ContentType.TEXT` for text items and `ContentType.URL` for links.
-- **Tag Association:** Tags should be trimmed, non-empty, deduplicated, and upserted per user, linking to the item through `ItemTag`.
-- **Success Feedback:** On successful creation, close the modal, display a success toast ("Item created successfully."), and trigger `router.refresh()` to update list views.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -322,5 +302,17 @@ In Progress
 - Added database integration test script in `scripts/test-item-delete.ts` (`npm run test:delete`) verifying live item creation, unauthorized deletion rejection, cascade cleanup, and non-existent item error handling (19/19 assertions passed).
 - Verified cleanly against ESLint (`npm run lint`), all test suites (`npm test`, `npm run test:delete`), and Next.js production build (`npm run build`).
 
+### Item Create (2026-09-12)
 
-
+- Implemented `createItemSchema` Zod validation in `src/lib/validations/items.ts` supporting polymorphic creation item types (`snippet`, `prompt`, `command`, `note`, `link`), requiring valid `http(s)://` URL for links, trimming inputs, and capping lengths.
+- Implemented `createItem` query function in `src/lib/db/items.ts` resolving system item types, running atomic Prisma `$transaction` for item creation and tag upserting with timeout safeguards (`15000ms`), and returning mapped `ItemDetail`.
+- Implemented `createItemAction` Server Action in `src/actions/items.ts` with NextAuth authentication, demo user fallback, Zod parsing, path cache revalidation (`/dashboard`, `/items`), and `{ success, data, message }` response structure.
+- Built accessible `CreateItemDialog` component in `src/components/items/create-item-dialog.tsx` using shadcn `Dialog`, featuring a polymorphic form that dynamically adjusts visible inputs based on selected item type.
+- Rendered dynamic type selector dropdown with exact database color codes and Lucide icons (`Code`, `Sparkles`, `Terminal`, `StickyNote`, `LinkIcon`), applying direct inline style colors to prevent CSS overrides on focus/hover.
+- Rendered common inputs (Title with 255-character counter, Description, Tags), type-specific inputs (Language & Content for `snippet`/`command`, Textarea Content for `prompt`/`note`, URL input for `link`), and smooth exit transitions without type flashing.
+- Connected "New Item" button in `TopBar` (`src/components/layout/top-bar.tsx`) to trigger the creation dialog.
+- Wrapped `(app)` route layout in `ItemDrawerProvider` around `DashboardLayout` so `TopBar` can trigger global toast notifications on item creation success.
+- Handled UX states: disabled submit button when title/URL invalid, spinner during submission, inline error banners, and `router.refresh()` list view refresh.
+- Added comprehensive unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` (125/125 passed).
+- Added end-to-end database integration test in `scripts/test-item-create.ts` (`npm run test:create` - 24/24 assertions passed).
+- Verified cleanly against ESLint (`npm run lint`), all test suites (`npm test`), and Next.js production build (`npm run build`).
