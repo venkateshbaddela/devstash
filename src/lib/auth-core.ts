@@ -5,6 +5,12 @@ import {
   consumePasswordResetToken,
 } from "@/lib/tokens";
 import { sendPasswordResetEmail } from "@/lib/mail";
+import {
+  validateResetEmail,
+  validateResetPassword,
+} from "@/lib/validations/auth";
+
+export { validateResetEmail, validateResetPassword };
 
 /**
  * Core business logic for initiating a password reset request.
@@ -12,15 +18,11 @@ import { sendPasswordResetEmail } from "@/lib/mail";
  */
 export async function executePasswordResetRequest(email: string) {
   try {
-    const trimmedEmail = email?.trim().toLowerCase();
-    if (!trimmedEmail) {
-      return { success: false, error: "Please enter your email address." };
+    const validation = validateResetEmail(email);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      return { success: false, error: "Please enter a valid email address." };
-    }
+    const trimmedEmail = validation.email;
 
     const user = await prisma.user.findUnique({
       where: { email: trimmedEmail },
@@ -62,20 +64,9 @@ export async function executePasswordReset(
       return { success: false, error: "Invalid or missing reset token." };
     }
 
-    if (!password) {
-      return { success: false, error: "Please enter a new password." };
-    }
-
-    if (password.length < 8) {
-      return { success: false, error: "Password must be at least 8 characters long." };
-    }
-
-    if (password.length > 72) {
-      return { success: false, error: "Password cannot exceed 72 characters." };
-    }
-
-    if (password !== confirmPassword) {
-      return { success: false, error: "Passwords do not match." };
+    const validation = validateResetPassword(password, confirmPassword);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
     }
 
     // Hash the new password with bcrypt (12 rounds)

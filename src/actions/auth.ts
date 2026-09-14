@@ -9,6 +9,10 @@ import {
   executePasswordResetRequest,
   executePasswordReset,
 } from "@/lib/auth-core";
+import {
+  validateResetEmail,
+  validateResetPassword,
+} from "@/lib/validations/auth";
 
 export async function signOutAction() {
   await signOut({ redirectTo: "/sign-in" });
@@ -82,14 +86,9 @@ export async function verifyEmailAction(token: string) {
 
 export async function requestPasswordResetAction(email: string) {
   try {
-    const trimmedEmail = email?.trim().toLowerCase();
-    if (!trimmedEmail) {
-      return { success: false, error: "Please enter your email address." };
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      return { success: false, error: "Please enter a valid email address." };
+    const validation = validateResetEmail(email);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
     }
 
     const clientIp = await getClientIp();
@@ -98,7 +97,7 @@ export async function requestPasswordResetAction(email: string) {
       return { success: false, error: rateLimit.errorMessage };
     }
 
-    return await executePasswordResetRequest(trimmedEmail);
+    return await executePasswordResetRequest(validation.email);
   } catch (err) {
     console.error("requestPasswordResetAction error:", err);
     return { success: false, error: "Failed to process password reset request." };
@@ -115,20 +114,9 @@ export async function resetPasswordAction(
       return { success: false, error: "Invalid or missing reset token." };
     }
 
-    if (!password || typeof password !== "string") {
-      return { success: false, error: "Password is required." };
-    }
-
-    if (password.length < 8) {
-      return { success: false, error: "Password must be at least 8 characters long." };
-    }
-
-    if (password.length > 72) {
-      return { success: false, error: "Password cannot exceed 72 characters." };
-    }
-
-    if (password !== confirmPassword) {
-      return { success: false, error: "Passwords do not match." };
+    const validation = validateResetPassword(password, confirmPassword);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
     }
 
     const clientIp = await getClientIp();
