@@ -61,7 +61,7 @@ export function ItemDrawer() {
     togglePin,
     openItem,
     setItemDetail,
-    showToast: showGlobalToast,
+    showToast,
   } = useItemDrawer();
 
   const router = useRouter();
@@ -79,14 +79,6 @@ export function ItemDrawer() {
   const [language, setLanguage] = useState("");
   const [url, setUrl] = useState("");
   const [tagsInput, setTagsInput] = useState("");
-
-  // Toast notification state
-  const [toast, setToast] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-
-  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Active display data: prefer full item, fallback to previewItem during initial loading
   const displayTitle = item?.title ?? previewItem?.title ?? "";
@@ -110,30 +102,11 @@ export function ItemDrawer() {
   const showLanguageField = ["snippet", "command"].includes(lowerType);
   const showUrlField = ["link"].includes(lowerType);
 
-  const showToast = (type: "success" | "error", message: string) => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
-    setToast({ type, message });
-    toastTimeoutRef.current = setTimeout(() => {
-      setToast(null);
-    }, 4000);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const [prevDisplayId, setPrevDisplayId] = useState(displayId);
   if (displayId !== prevDisplayId) {
     setPrevDisplayId(displayId);
     setIsEditing(false);
     setIsImageModalOpen(false);
-    setToast(null);
   }
 
   const handleOpenChange = (open: boolean) => {
@@ -471,37 +444,6 @@ export function ItemDrawer() {
                 <Trash2 className="size-3.5" />
               </Button>
             </div>
-          </div>
-        )}
-
-        {/* Toast Notification */}
-        {toast && (
-          <div
-            role="status"
-            aria-live="polite"
-            className={cn(
-              "mx-5 sm:mx-6 mt-3 px-3.5 py-2.5 rounded-lg border text-xs flex items-center justify-between gap-3 shadow-md animate-in fade-in slide-in-from-top-2 shrink-0",
-              toast.type === "success"
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                : "border-destructive/30 bg-destructive/10 text-destructive"
-            )}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              {toast.type === "success" ? (
-                <Check className="size-4 text-emerald-400 shrink-0" />
-              ) : (
-                <AlertCircle className="size-4 text-destructive shrink-0" />
-              )}
-              <span className="truncate font-medium">{toast.message}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setToast(null)}
-              className="p-1 rounded hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              aria-label="Dismiss notification"
-            >
-              <X className="size-3.5" />
-            </button>
           </div>
         )}
 
