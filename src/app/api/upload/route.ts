@@ -94,6 +94,14 @@ export async function POST(req: NextRequest) {
       storageKey
     )}&filename=${encodeURIComponent(fileName)}`;
 
+    const isSvg =
+      fileName.toLowerCase().endsWith(".svg") ||
+      Boolean(fileMime && fileMime.toLowerCase().includes("svg"));
+
+    const previewUrl = isSvg
+      ? `${downloadUrl}&preview=true`
+      : `${downloadUrl}&inline=true`;
+
     return NextResponse.json({
       success: true,
       fileName,
@@ -101,6 +109,7 @@ export async function POST(req: NextRequest) {
       mimeType: fileMime || (targetType === "image" ? "image/png" : "application/octet-stream"),
       storageKey,
       fileUrl: downloadUrl,
+      previewUrl,
     });
   } catch (error) {
     console.error("Error in /api/upload:", error);

@@ -27,6 +27,7 @@ export interface UploadedFileData {
   fileSize: number;
   mimeType: string;
   storageKey: string;
+  previewUrl?: string;
 }
 
 interface FileUploadProps {
@@ -99,10 +100,13 @@ export function FileUpload({
         return;
       }
 
-      // 2. Image local preview while uploading
+      // 2. Image local preview while uploading (only for raster images, never for raw SVGs)
       if (isImage) {
-        const preview = URL.createObjectURL(file);
-        setLocalPreviewUrl(preview);
+        const isSvg = file.name.toLowerCase().endsWith(".svg") || file.type.includes("svg");
+        if (!isSvg) {
+          const preview = URL.createObjectURL(file);
+          setLocalPreviewUrl(preview);
+        }
       }
 
       // 3. Initiate XMLHttpRequest for progress tracking
@@ -136,6 +140,7 @@ export function FileUpload({
                 fileSize: data.fileSize,
                 mimeType: data.mimeType,
                 storageKey: data.storageKey,
+                previewUrl: data.previewUrl,
               });
               setErrorMessage(null);
             } else {
@@ -242,7 +247,7 @@ export function FileUpload({
               <div className="relative rounded-lg overflow-hidden border border-border/70 bg-zinc-900 flex items-center justify-center max-h-56">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={localPreviewUrl || value.fileUrl}
+                  src={localPreviewUrl || value.previewUrl || value.fileUrl}
                   alt={value.fileName}
                   className="max-h-56 w-auto object-contain"
                 />

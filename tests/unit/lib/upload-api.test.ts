@@ -144,6 +144,48 @@ describe("File Upload & Download API Routes", () => {
       expect(uploadFileToB2).toHaveBeenCalled();
     });
 
+    it("returns previewUrl with preview=true when SVG is uploaded", async () => {
+      const formData = new FormData();
+      const svgContent = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>';
+      const svgBlob = new Blob([svgContent], { type: "image/svg+xml" });
+      formData.append("file", svgBlob, "icon.svg");
+      formData.append("type", "image");
+
+      const req = new NextRequest("http://localhost:3000/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const res = await uploadPost(req);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.fileName).toBe("icon.svg");
+      expect(json.mimeType).toBe("image/svg+xml");
+      expect(json.previewUrl).toContain("preview=true");
+      expect(json.fileUrl).not.toContain("preview=true");
+    });
+
+    it("returns previewUrl with inline=true when raster image (PNG) is uploaded", async () => {
+      const formData = new FormData();
+      const pngBlob = new Blob([new Uint8Array(10)], { type: "image/png" });
+      formData.append("file", pngBlob, "photo.png");
+      formData.append("type", "image");
+
+      const req = new NextRequest("http://localhost:3000/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const res = await uploadPost(req);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.fileName).toBe("photo.png");
+      expect(json.mimeType).toBe("image/png");
+      expect(json.previewUrl).toContain("inline=true");
+    });
+
     it("returns 500 when Backblaze B2 upload fails", async () => {
       vi.mocked(uploadFileToB2).mockRejectedValueOnce(
         new Error("Backblaze B2 connection timeout")
@@ -187,7 +229,7 @@ describe("File Upload & Download API Routes", () => {
       expect(json.error).toContain("File not found");
     });
 
-    it("returns 200 with attachment headers by default", async () => {
+    it("returns 200 with attachment headers by default for standard files", async () => {
       const testBuffer = Buffer.from("pdf-data-bytes");
       vi.mocked(getFileFromB2).mockResolvedValue({
         buffer: testBuffer,
@@ -205,20 +247,117 @@ describe("File Upload & Download API Routes", () => {
       expect(res.headers.get("Content-Length")).toBe(String(testBuffer.length));
     });
 
-    it("returns inline Content-Disposition when inline=true", async () => {
-      const testBuffer = Buffer.from("image-png-bytes");
+    it("serves raster images (PNG, JPG, WEBP, GIF) inline when inline=true is requested", async () => {
+      const formats = [
+        { ext: "png", mime: "image/png" },
+        { ext: "jpg", mime: "image/jpeg" },
+        { ext: "webp", mime: "image/webp" },
+        { ext: "gif", mime: "image/gif" },
+      ];
+
+      for (const format of formats) {
+        const testBuffer = Buffer.from(`dummy-${format.ext}-data`);
+        vi.mocked(getFileFromB2).mockResolvedValue({
+          buffer: testBuffer,
+          contentType: format.mime,
+          contentLength: testBuffer.length,
+        });
+
+        const req = new NextRequest(
+          `http://localhost:3000/api/files/download?key=uploads/user/test.${format.ext}&filename=test.${format.ext}&inline=true`
+        );
+        const res = await downloadGet(req);
+        expect(res.status).toBe(200);
+        expect(res.headers.get("Content-Type")).toBe(format.mime);
+        expect(res.headers.get("Content-Disposition")).toContain("inline; filename=");
+        expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      }
+    });
+
+    it("never serves original SVG inline even if inline=true is requested", async () => {
+      const svgBuffer = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
       vi.mocked(getFileFromB2).mockResolvedValue({
-        buffer: testBuffer,
-        contentType: "image/png",
-        contentLength: testBuffer.length,
+        buffer: svgBuffer,
+        contentType: "image/svg+xml",
+        contentLength: svgBuffer.length,
       });
 
       const req = new NextRequest(
-        "http://localhost:3000/api/files/download?key=uploads/user/photo.png&filename=photo.png&inline=true"
+        "http://localhost:3000/api/files/download?key=uploads/user/vector.svg&filename=vector.svg&inline=true"
       );
       const res = await downloadGet(req);
       expect(res.status).toBe(200);
+      // Must be forced to attachment, never inline
+      expect(res.headers.get("Content-Disposition")).toContain("attachment; filename=");
+      expect(res.headers.get("Content-Disposition")).not.toContain("inline");
+      expect(res.headers.get("Content-Type")).toBe("image/svg+xml");
+      expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      expect(res.headers.get("Content-Security-Policy")).toBe("default-src 'none'; sandbox");
+    });
+
+    it("serves original SVG as attachment when downloaded without preview parameter", async () => {
+      const svgBuffer = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>');
+      vi.mocked(getFileFromB2).mockResolvedValue({
+        buffer: svgBuffer,
+        contentType: "image/svg+xml",
+        contentLength: svgBuffer.length,
+      });
+
+      const req = new NextRequest(
+        "http://localhost:3000/api/files/download?key=uploads/user/vector.svg&filename=vector.svg"
+      );
+      const res = await downloadGet(req);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Content-Disposition")).toContain("attachment; filename=");
+      expect(res.headers.get("Content-Type")).toBe("image/svg+xml");
+      expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      expect(res.headers.get("Content-Security-Policy")).toBe("default-src 'none'; sandbox");
+    });
+
+    it("generates safe raster PNG preview when preview=true is requested for SVG", async () => {
+      const validSvg = Buffer.from(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><rect width="50" height="50" fill="blue"/></svg>'
+      );
+      vi.mocked(getFileFromB2).mockResolvedValue({
+        buffer: validSvg,
+        contentType: "image/svg+xml",
+        contentLength: validSvg.length,
+      });
+
+      const req = new NextRequest(
+        "http://localhost:3000/api/files/download?key=uploads/user/logo.svg&filename=logo.svg&preview=true"
+      );
+      const res = await downloadGet(req);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Content-Type")).toBe("image/png");
       expect(res.headers.get("Content-Disposition")).toContain("inline; filename=");
+      expect(res.headers.get("Content-Disposition")).toContain("logo.png");
+      expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      // Check response body is valid PNG buffer (starts with PNG signature bytes 0x89, 0x50, 0x4E, 0x47)
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      expect(buffer.length).toBeGreaterThan(0);
+      expect(buffer[0]).toBe(0x89);
+      expect(buffer[1]).toBe(0x50);
+      expect(buffer[2]).toBe(0x4e);
+      expect(buffer[3]).toBe(0x47);
+    });
+
+    it("returns 500 if SVG rasterization fails", async () => {
+      const invalidSvgBuffer = Buffer.from("not a valid svg content at all");
+      vi.mocked(getFileFromB2).mockResolvedValue({
+        buffer: invalidSvgBuffer,
+        contentType: "image/svg+xml",
+        contentLength: invalidSvgBuffer.length,
+      });
+
+      const req = new NextRequest(
+        "http://localhost:3000/api/files/download?key=uploads/user/corrupt.svg&filename=corrupt.svg&preview=true"
+      );
+      const res = await downloadGet(req);
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error).toContain("Failed to generate preview for SVG image");
     });
   });
 });

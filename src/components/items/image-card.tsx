@@ -18,8 +18,22 @@ export function ImageCard({ item, onClick }: ImageCardProps) {
   const [imgError, setImgError] = useState(false);
 
   const fileUrl = "fileUrl" in item ? item.fileUrl : null;
+  const fileName = "fileName" in item ? item.fileName : null;
+  const mimeType = "mimeType" in item ? item.mimeType : null;
+  const isSvg =
+    (fileName && fileName.toLowerCase().endsWith(".svg")) ||
+    (mimeType && mimeType.toLowerCase().includes("svg")) ||
+    (fileUrl && fileUrl.toLowerCase().includes(".svg"));
+
+  let previewUrl = fileUrl;
+  if (fileUrl) {
+    previewUrl = fileUrl.includes("?")
+      ? `${fileUrl}&${isSvg ? "preview=true" : "inline=true"}`
+      : `${fileUrl}?${isSvg ? "preview=true" : "inline=true"}`;
+  }
+
   const fileSize = "fileSize" in item ? item.fileSize : null;
-  const hasImage = Boolean(fileUrl) && !imgError;
+  const hasImage = Boolean(previewUrl) && !imgError;
 
   const handleClick = () => {
     onClick?.(item);
@@ -52,7 +66,7 @@ export function ImageCard({ item, onClick }: ImageCardProps) {
         {hasImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={fileUrl!}
+            src={previewUrl!}
             alt={item.title}
             className="size-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
             loading="lazy"
