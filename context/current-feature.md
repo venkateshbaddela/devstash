@@ -360,3 +360,27 @@ Not Started
 - Extended `DASHBOARD_ITEM_SELECT` and `DashboardItem` in `src/lib/db/items.ts` to query `fileUrl`, `fileName`, `fileSize`, and `mimeType` for lightweight, immediate thumbnail rendering without secondary queries.
 - Enhanced `ItemDrawer` (`src/components/items/item-drawer.tsx`) with click-to-expand hover overlay, "View Full" action button, and full image `Dialog` modal (`max-h-[72vh] object-contain`, header metadata, download, and open-in-new-tab actions).
 - Verified 100% passing across Vitest unit tests (183/183 passed), item list integration tests (`test:items` - 47/47 passed), ESLint (`npm run lint`), and Next.js production build (`npm run build`).
+
+### Full Codebase Audit Remediation & Hardening (2026-09-14)
+
+- **Security Hardening:**
+  - Prevented premature email overwriting before email verification using namespaced `email-change:${userId}` tokens in `src/actions/profile.ts` and `src/lib/tokens.ts`.
+  - Prevented IDOR on `/api/files/download` by enforcing key prefix validation (`uploads/<userId>/`) and database record ownership checks.
+  - Mitigated stored XSS by serving original uploaded SVGs as sandboxed `attachment` downloads and generating safe PNG previews.
+  - Added sliding-window rate limiting on `POST /api/files/upload` (10 uploads / 10 min) to protect object storage.
+  - Defensively stripped base64/data-URL pictures from JWT payloads to prevent HTTP 431 header size issues, fetching profile updates in the session callback.
+  - Consolidated password reset validation helpers in `src/lib/validations/auth.ts`.
+- **Database & Performance:**
+  - Implemented batch tag reconciliation in `src/lib/db/items.ts` with `findMany` and `createMany` instead of sequential loops.
+  - Bounded collection preview items (`take: 5`) and `getCollections` limits (`take: 50`) in `src/lib/db/collections.ts`.
+  - Scoped dashboard queries in `src/app/(app)/dashboard/page.tsx` to authenticated user session ID.
+- **UI & Component Refactoring:**
+  - Replaced render-phase state mutations in `ItemDrawer` with derived state for `isEditing` and `isImageModalOpen`.
+  - Removed duplicate local toast state in `ItemDrawer`, unifying under the global `showToast` provider.
+  - Replaced redundant inline icon maps in `CollectionsGrid` with centralized `<ItemTypeIcon />`.
+  - Removed unused NextAuth imports in `src/auth.ts` ensuring zero ESLint warnings.
+- **Comprehensive Verification:**
+  - Verified 100% passing across Vitest unit tests (221/221 tests across 19 suites).
+  - Verified all 14 integration test suites (`test:db`, `test:auth`, `test:reset`, `test:profile`, `test:rate-limit`, `test:length`, `test:atomic-reg`, `test:session`, `test:items`, `test:drawer`, `test:edit`, `test:delete`, `test:create`, `test:files`).
+  - Verified UI end-to-end with Playwright MCP across Dashboard, ItemDrawer (view, edit, code preview), Image Gallery, Full-size Modal, Create Item Dialog, Profile, and Settings.
+  - Clean ESLint (0 errors, 0 warnings) and clean production build (`npm run build`).

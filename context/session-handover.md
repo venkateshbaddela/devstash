@@ -7,9 +7,9 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `feat(gallery): implement 3-column image gallery view and full image modal in drawer`
-- **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
-- **Unit Tests:** 183 / 183 passing Vitest unit tests (`npm test`) across 15 test suites
+- **Last Commit:** `fix(audit): full codebase audit remediation, security hardening, and performance optimizations`
+- **Build & Lint:** 100% passing (`npm run build` and `npm run lint` - 0 errors, 0 warnings)
+- **Unit Tests:** 221 / 221 passing Vitest unit tests (`npm test`) across 19 test suites
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including `tokenVersion` column on `users` table).
 - **Object Storage:** Backblaze B2 S3-compatible cloud storage for file and image attachments.
 
@@ -143,6 +143,12 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 - **Responsive 3-Column Grid:** Clean layout on `/items/images`.
 - **Full-Size Modal Viewer:** High-resolution image preview modal in `ItemDrawer` with download and open-in-new-tab actions.
 
+### S. Codebase Audit Remediation & Hardening
+- **Security Hardening:** Namespaced email-change verification tokens, IDOR mitigation on file downloads via key prefix and ownership checks, stored XSS mitigation on SVGs, upload rate limiting, data-URL picture stripping from JWT payloads, and consolidated password reset validations.
+- **Database & Query Performance:** Batched tag reconciliation in item mutations, bounded collection preview items (`take: 5`) and collection query limits (`take: 50`), and scoped dashboard data queries to authenticated `session.user.id`.
+- **UI & State Cleanup:** Replaced render-phase state mutations with derived state in `ItemDrawer`, consolidated toast notifications under global provider, centralized icon rendering, and eliminated unused NextAuth imports.
+- **Full Verification:** 221 / 221 passing unit tests across 19 suites, 14 passing integration test suites, clean Playwright MCP testing, 0 ESLint warnings, and clean production build.
+
 ---
 
 ## 3. Handy Commands
@@ -151,7 +157,7 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 npm run dev         # Next.js dev server
 npm run build       # Next.js production build (Turbopack)
 npm run lint        # ESLint check
-npm test            # Run Vitest unit tests (183 tests across Server Actions & utilities)
+npm test            # Run Vitest unit tests (221 tests across 19 suites)
 npm run test:unit   # Alias for npm test
 npm run test:watch  # Run Vitest unit tests in interactive watch mode
 npm run test:db     # Test Neon DB connection and print all demo data
@@ -192,7 +198,7 @@ npm run db:clean-users # Clean test users from DB
 
 ## 5. Logical Next Step
  
-Core Item Knowledge Management (CRUD, Drawer, Editors, Backblaze B2 Upload, Image Gallery) is complete, thoroughly tested, and merged into `main`. The logical next tasks based on our roadmap are:
-1. **Scope Dashboard to Active User & Filter by Collection:** Ensure `DashboardPage` receives `session.user.id` so authenticated users see their own items, and wire up `?collection=...` search param to filter dashboard items with an active filter badge.
+Core Item Knowledge Management and Audit Remediation are complete, thoroughly tested, and merged into `main`. The logical next tasks based on our roadmap are:
+1. **Filter Dashboard by Collection:** Wire up `?collection=...` search param to filter dashboard items with an active filter badge and clear filter button.
 2. **Collection CRUD & Management:** Implement "New Collection" creation modal in `TopBar`/sidebar and collection edit/delete actions.
 3. **Search & Command Palette (Phase 3):** Implement `⌘K` / `Ctrl+K` global command palette and full-text search across items, tags, and collections.
