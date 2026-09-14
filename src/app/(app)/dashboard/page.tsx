@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { CollectionsGrid } from "@/components/dashboard/collections-grid";
 import { PinnedItems } from "@/components/dashboard/pinned-items";
@@ -13,6 +14,9 @@ import {
 } from "@/lib/db/items";
 
 export default async function DashboardPage() {
+  const session = await auth();
+  const userId = session?.user?.id;
+
   const [
     collections,
     collectionStats,
@@ -20,11 +24,11 @@ export default async function DashboardPage() {
     recentItems,
     itemStats,
   ] = await Promise.all([
-    getDashboardCollections(),
-    getCollectionStats(),
-    getPinnedItems(),
-    getRecentItems(),
-    getItemStats(),
+    getDashboardCollections(userId),
+    getCollectionStats(userId),
+    getPinnedItems(userId),
+    getRecentItems(userId),
+    getItemStats(userId),
   ]);
 
   return (
