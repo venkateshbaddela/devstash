@@ -1,22 +1,28 @@
-# Current Feature
+# Codebase Modularization & Decomposition
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+1. **Task 1:** Break down `ItemDrawer` (`src/components/items/item-drawer.tsx` — 1,150 lines) into modular sub-components under `src/components/items/drawer/`.
+2. **Task 2:** Split database items operations (`src/lib/db/items.ts` — 861 lines) into read queries and transactional mutations (`items-mutations.ts`).
+3. **Task 3:** Modularize `CreateItemDialog` (`src/components/items/create-item-dialog.tsx` — 601 lines) by extracting `TYPE_CONFIG` and `ItemTypeSelector`.
+4. **Task 4:** Extract `markdownComponents` from `MarkdownEditor` (`src/components/ui/markdown-editor.tsx` — 438 lines) into reusable `markdown-components.tsx`.
+5. **Task 5:** Deduplicate authentication and demo-user safeguard boilerplate in Server Actions via a shared `requireAuthUser` guard.
+- Verify 100% passing unit tests (`npm test`), 0 ESLint errors (`npm run lint`), and clean production build (`npm run build`) after each step.
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- Work on tasks one by one with user permission before and after each task.
+- Ensure all public interfaces, component props, and re-exports preserve backwards compatibility so no outside call sites break.
 
 ---
 
@@ -393,4 +399,25 @@ Not Started
 - Preserved drag-and-drop auto-staging, client constraint validation, and automatic pre-population of the item title and cloud upload in `CreateItemDialog`.
 - Provided visual feedback (`cursor-pointer`, hover highlight states, "Click to browse" prompt) and keyboard accessibility (`tabIndex={0}`, `role="region"`, `Enter`/`Space` key handlers).
 - Verified 100% passing across Vitest unit tests (221/221 passed), ESLint (`npm run lint`), Next.js production build (`npm run build`), and Playwright interaction tests.
+### Codebase Modularization & Decomposition (2026-09-14)
 
+- **Task 1: ItemDrawer Decomposition (`src/components/items/item-drawer.tsx`):**
+  - Reduced monolithic 1,150-line `ItemDrawer` down to 297 lines by splitting into focused subcomponents under `src/components/items/drawer/`:
+    - `item-drawer-header.tsx`: Header title, icon, tags, and drawer controls.
+    - `item-drawer-actions.tsx`: Pin, favorite, copy, edit, delete, and download buttons.
+    - `item-drawer-edit-form.tsx`: Edit mode form fields for title, description, content, tags, language.
+    - `item-drawer-content.tsx`: View mode content rendering across all item types (snippet, command, prompt, note, link, file, image).
+    - `item-drawer-image-modal.tsx`: Fullscreen image preview dialog modal.
+    - `index.ts`: Clean barrel re-exports.
+- **Task 2: Database Operations Split (`src/lib/db/items.ts`):**
+  - Split 861-line `items.ts` into read queries/mappers (551 lines) and transactional mutations in `src/lib/db/items-mutations.ts` (323 lines).
+  - Maintained 100% backward compatibility via barrel re-exports in `items.ts`.
+- **Task 3: CreateItemDialog Decomposition (`src/components/items/create-item-dialog.tsx`):**
+  - Extracted centralized `TYPE_CONFIG` dictionary to `src/lib/constants/item-types.ts`.
+  - Extracted 95-line dropdown type selector into reusable `src/components/items/item-type-selector.tsx`.
+  - Reduced `create-item-dialog.tsx` from 602 lines down to 433 lines.
+- **Verification:**
+  - 100% passing across Vitest unit tests (221/221 tests passed).
+  - 100% passing across integration tests (`test:items`, `test:create`, `test:edit`, `test:delete`).
+  - ESLint passing with 0 errors and 0 warnings.
+  - Next.js production build (`npm run build`) passing cleanly.
