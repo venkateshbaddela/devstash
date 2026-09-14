@@ -38,9 +38,18 @@ export function FileImageEmptyDropzone({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const dragCounterRef = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isImage = type === "image";
   const constraints = isImage ? IMAGE_CONSTRAINTS : FILE_CONSTRAINTS;
+
+  const acceptString = isImage
+    ? IMAGE_CONSTRAINTS.allowedExtensions.join(",") +
+      "," +
+      IMAGE_CONSTRAINTS.allowedMimeTypes.join(",")
+    : FILE_CONSTRAINTS.allowedExtensions.join(",") +
+      "," +
+      FILE_CONSTRAINTS.allowedMimeTypes.join(",");
 
   const handleStageFile = useCallback(
     (file: File) => {
@@ -60,6 +69,29 @@ export function FileImageEmptyDropzone({
     },
     [type]
   );
+
+  const handleBoxClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleStageFile(files[0]);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -113,15 +145,20 @@ export function FileImageEmptyDropzone({
   return (
     <>
       <div
+        onClick={handleBoxClick}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="region"
+        aria-label={`Upload or create ${singularName}`}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "relative flex flex-col items-center justify-center p-10 sm:p-12 text-center rounded-xl border-2 border-dashed transition-all duration-200 select-none gap-4 overflow-hidden",
+          "relative flex flex-col items-center justify-center p-10 sm:p-12 text-center rounded-xl border-2 border-dashed transition-all duration-200 select-none gap-4 overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
           isDragging
             ? "border-primary bg-primary/5 scale-[0.995] ring-2 ring-primary/20"
-            : "border-border/80 bg-muted/10 dark:bg-zinc-950/30",
+            : "border-border/80 bg-muted/10 hover:bg-muted/20 hover:border-border dark:bg-zinc-950/30 dark:hover:bg-zinc-900/40",
           className
         )}
         style={
@@ -133,6 +170,17 @@ export function FileImageEmptyDropzone({
             : undefined
         }
       >
+        {/* Hidden File Input for Native File Manager */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={acceptString}
+          onChange={handleFileInputChange}
+          className="hidden"
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+
         {/* Type Icon */}
         <div
           className={cn(
@@ -163,7 +211,10 @@ export function FileImageEmptyDropzone({
               : `No ${displayName.toLowerCase()} found yet`}
           </p>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Drag and drop your {singularName.toLowerCase()} here to upload, or create one manually.
+            <span className="text-foreground font-medium underline underline-offset-2 hover:text-primary transition-colors">
+              Click to browse
+            </span>{" "}
+            or drag and drop your {singularName.toLowerCase()} here, or create one manually.
           </p>
         </div>
 
@@ -171,7 +222,10 @@ export function FileImageEmptyDropzone({
         <Button
           type="button"
           size="sm"
-          onClick={handleOpenManualDialog}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpenManualDialog();
+          }}
           className="cursor-pointer shadow-xs gap-1.5 font-medium bg-foreground text-background hover:bg-foreground/90 h-9 px-4 text-xs"
         >
           <Plus className="size-3.5" />
@@ -187,12 +241,18 @@ export function FileImageEmptyDropzone({
 
         {/* Validation Error Alert */}
         {errorMessage && (
-          <div className="flex items-center gap-2 max-w-md w-full p-2.5 rounded-lg bg-destructive/15 border border-destructive/30 text-destructive text-xs animate-in fade-in slide-in-from-top-1">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 max-w-md w-full p-2.5 rounded-lg bg-destructive/15 border border-destructive/30 text-destructive text-xs animate-in fade-in slide-in-from-top-1"
+          >
             <AlertCircle className="size-4 shrink-0" />
             <span className="flex-1 text-left">{errorMessage}</span>
             <button
               type="button"
-              onClick={() => setErrorMessage(null)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setErrorMessage(null);
+              }}
               className="p-1 hover:opacity-80 cursor-pointer"
               title="Dismiss error"
             >
