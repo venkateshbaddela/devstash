@@ -1,4 +1,5 @@
 import { cache } from "react";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getDefaultUserId } from "@/lib/db/collections";
 import { deleteFileFromB2 } from "@/lib/storage";
@@ -550,6 +551,75 @@ export interface UpdateItemData {
 }
 
 /**
+ * Efficiently reconciles and links tags to an item inside a transaction.
+ * Uses batched findMany and createMany operations instead of sequential N-query loops.
+ */
+async function reconcileItemTags(
+  tx: Prisma.TransactionClient,
+  itemId: string,
+  targetUserId: string,
+  tags: string[]
+): Promise<void> {
+  const uniqueTagNames = Array.from(
+    new Set(
+      tags
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0)
+    )
+  );
+
+  if (uniqueTagNames.length === 0) {
+    return;
+  }
+
+  // 1. Fetch any tags that already exist for this user
+  const existingTags = await tx.tag.findMany({
+    where: {
+      userId: targetUserId,
+      name: { in: uniqueTagNames },
+    },
+    select: { id: true, name: true },
+  });
+
+  const existingNames = new Set(existingTags.map((t) => t.name));
+  const missingNames = uniqueTagNames.filter((name) => !existingNames.has(name));
+
+  // 2. Batch-create missing tags
+  if (missingNames.length > 0) {
+    await tx.tag.createMany({
+      data: missingNames.map((name) => ({
+        name,
+        userId: targetUserId,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  // 3. Fetch all tag IDs for linking
+  const allTags =
+    missingNames.length > 0
+      ? await tx.tag.findMany({
+          where: {
+            userId: targetUserId,
+            name: { in: uniqueTagNames },
+          },
+          select: { id: true },
+        })
+      : existingTags;
+
+  // 4. Batch-create item-tag join records
+  if (allTags.length > 0) {
+    await tx.itemTag.createMany({
+      data: allTags.map((tag) => ({
+        itemId,
+        tagId: tag.id,
+      })),
+      skipDuplicates: true,
+    });
+  }
+}
+
+/**
  * Updates an item's editable fields and reconciles its tags.
  * Reconciles tags by disconnecting existing ones and connecting/creating new ones.
  * Returns the fresh ItemDetail.
@@ -575,36 +645,7 @@ export async function updateItem(
         where: { itemId },
       });
 
-      const uniqueTagNames = Array.from(
-        new Set(
-          data.tags
-            .map((t) => t.trim())
-            .filter((t) => t.length > 0)
-        )
-      );
-
-      for (const name of uniqueTagNames) {
-        const tag = await tx.tag.upsert({
-          where: {
-            userId_name: {
-              userId: targetUserId,
-              name,
-            },
-          },
-          create: {
-            name,
-            userId: targetUserId,
-          },
-          update: {},
-        });
-
-        await tx.itemTag.create({
-          data: {
-            itemId,
-            tagId: tag.id,
-          },
-        });
-      }
+      await reconcileItemTags(tx, itemId, targetUserId, data.tags);
     }
 
     // 2. Update core item properties
@@ -768,36 +809,7 @@ export async function createItem(
       });
 
       if (Array.isArray(data.tags)) {
-        const uniqueTagNames = Array.from(
-          new Set(
-            data.tags
-              .map((t) => t.trim())
-              .filter((t) => t.length > 0)
-          )
-        );
-
-        for (const name of uniqueTagNames) {
-          const tag = await tx.tag.upsert({
-            where: {
-              userId_name: {
-                userId: targetUserId,
-                name,
-              },
-            },
-            create: {
-              name,
-              userId: targetUserId,
-            },
-            update: {},
-          });
-
-          await tx.itemTag.create({
-            data: {
-              itemId: created.id,
-              tagId: tag.id,
-            },
-          });
-        }
+        await reconcileItemTags(tx, created.id, targetUserId, data.tags);
       }
 
       const fullItem = await tx.item.findUnique({

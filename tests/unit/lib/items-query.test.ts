@@ -6,9 +6,12 @@ const mockTx = {
   itemTag: {
     deleteMany: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
   },
   tag: {
     upsert: vi.fn(),
+    findMany: vi.fn(),
+    createMany: vi.fn(),
   },
   item: {
     update: vi.fn(),
@@ -30,9 +33,12 @@ vi.mock("@/lib/prisma", () => ({
     itemTag: {
       deleteMany: vi.fn(),
       create: vi.fn(),
+      createMany: vi.fn(),
     },
     tag: {
       upsert: vi.fn(),
+      findMany: vi.fn(),
+      createMany: vi.fn(),
     },
     $transaction: vi.fn((cb: (tx: typeof mockTx) => unknown) => cb(mockTx)),
   },
@@ -225,7 +231,11 @@ describe("Item Database Queries", () => {
         userId: "user-123",
       } as unknown as Awaited<ReturnType<typeof prisma.item.findFirst>>);
 
-      mockTx.tag.upsert.mockResolvedValue({ id: "tag-new-id", name: "nextjs" });
+      mockTx.tag.findMany
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ id: "tag-new-id", name: "nextjs" }]);
+      mockTx.tag.createMany.mockResolvedValue({ count: 1 });
+      mockTx.itemTag.createMany.mockResolvedValue({ count: 1 });
       mockTx.item.update.mockResolvedValue({
         ...mockDbItem,
         title: "Updated Title",
@@ -242,25 +252,20 @@ describe("Item Database Queries", () => {
       expect(mockTx.itemTag.deleteMany).toHaveBeenCalledWith({
         where: { itemId: "item-123" },
       });
-      expect(mockTx.tag.upsert).toHaveBeenCalledTimes(1);
-      expect(mockTx.tag.upsert).toHaveBeenCalledWith({
+      expect(mockTx.tag.findMany).toHaveBeenCalledWith({
         where: {
-          userId_name: {
-            userId: "user-123",
-            name: "nextjs",
-          },
-        },
-        create: {
-          name: "nextjs",
           userId: "user-123",
+          name: { in: ["nextjs"] },
         },
-        update: {},
+        select: { id: true, name: true },
       });
-      expect(mockTx.itemTag.create).toHaveBeenCalledWith({
-        data: {
-          itemId: "item-123",
-          tagId: "tag-new-id",
-        },
+      expect(mockTx.tag.createMany).toHaveBeenCalledWith({
+        data: [{ name: "nextjs", userId: "user-123" }],
+        skipDuplicates: true,
+      });
+      expect(mockTx.itemTag.createMany).toHaveBeenCalledWith({
+        data: [{ itemId: "item-123", tagId: "tag-new-id" }],
+        skipDuplicates: true,
       });
       expect(mockTx.item.update).toHaveBeenCalledWith({
         where: { id: "item-123" },
@@ -291,7 +296,9 @@ describe("Item Database Queries", () => {
       });
 
       expect(mockTx.itemTag.deleteMany).not.toHaveBeenCalled();
-      expect(mockTx.tag.upsert).not.toHaveBeenCalled();
+      expect(mockTx.tag.findMany).not.toHaveBeenCalled();
+      expect(mockTx.tag.createMany).not.toHaveBeenCalled();
+      expect(mockTx.itemTag.createMany).not.toHaveBeenCalled();
     });
 
     it("clears all tags when tags property is an empty array", async () => {
@@ -313,7 +320,9 @@ describe("Item Database Queries", () => {
       expect(mockTx.itemTag.deleteMany).toHaveBeenCalledWith({
         where: { itemId: "item-123" },
       });
-      expect(mockTx.tag.upsert).not.toHaveBeenCalled();
+      expect(mockTx.tag.findMany).not.toHaveBeenCalled();
+      expect(mockTx.tag.createMany).not.toHaveBeenCalled();
+      expect(mockTx.itemTag.createMany).not.toHaveBeenCalled();
       expect(result?.tags).toEqual([]);
     });
   });
@@ -428,11 +437,11 @@ describe("Item Database Queries", () => {
         id: "created-snippet-123",
       });
 
-      mockTx.tag.upsert.mockResolvedValue({
-        id: "tag-react-id",
-        name: "react",
-        userId: "user-123",
-      });
+      mockTx.tag.findMany
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ id: "tag-react-id", name: "react" }]);
+      mockTx.tag.createMany.mockResolvedValue({ count: 1 });
+      mockTx.itemTag.createMany.mockResolvedValue({ count: 1 });
 
       mockTx.item.findUnique.mockResolvedValue({
         ...mockDbItem,
@@ -462,25 +471,20 @@ describe("Item Database Queries", () => {
         }),
       });
 
-      expect(mockTx.tag.upsert).toHaveBeenCalledWith({
+      expect(mockTx.tag.findMany).toHaveBeenCalledWith({
         where: {
-          userId_name: {
-            userId: "user-123",
-            name: "react",
-          },
-        },
-        create: {
-          name: "react",
           userId: "user-123",
+          name: { in: ["react"] },
         },
-        update: {},
+        select: { id: true, name: true },
       });
-
-      expect(mockTx.itemTag.create).toHaveBeenCalledWith({
-        data: {
-          itemId: "created-snippet-123",
-          tagId: "tag-react-id",
-        },
+      expect(mockTx.tag.createMany).toHaveBeenCalledWith({
+        data: [{ name: "react", userId: "user-123" }],
+        skipDuplicates: true,
+      });
+      expect(mockTx.itemTag.createMany).toHaveBeenCalledWith({
+        data: [{ itemId: "created-snippet-123", tagId: "tag-react-id" }],
+        skipDuplicates: true,
       });
 
       expect(res).not.toBeNull();
