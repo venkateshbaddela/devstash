@@ -3,18 +3,9 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
-  Code,
-  Sparkles,
-  Terminal,
-  StickyNote,
-  Link as LinkIcon,
-  FileText,
-  Image as ImageIcon,
   Loader2,
   AlertCircle,
   Plus,
-  ChevronDown,
-  Check,
 } from "lucide-react";
 import {
   Dialog,
@@ -25,23 +16,13 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createItemAction } from "@/actions/items";
 import { useOptionalItemDrawer } from "@/components/items/item-drawer-context";
-import {
-  CreationItemType,
-  CREATION_ITEM_TYPES,
-} from "@/lib/validations/items";
-import { cn } from "cn";
+import { CreationItemType } from "@/lib/validations/items";
+import { TYPE_CONFIG } from "@/lib/constants/item-types";
+import { ItemTypeSelector } from "@/components/items/item-type-selector";
 import { CodeEditor } from "@/components/ui/code-editor";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { isMarkdownItemType, isCodeItemType } from "@/lib/markdown";
@@ -55,67 +36,6 @@ interface CreateItemDialogProps {
   initialFile?: File | null;
   onSuccess?: (item: ItemDetail) => void;
 }
-
-const TYPE_CONFIG: Record<
-  CreationItemType,
-  {
-    name: string;
-    icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-    color: string;
-    description: string;
-    contentPlaceholder: string;
-  }
-> = {
-  snippet: {
-    name: "Snippet",
-    icon: Code,
-    color: "#3b82f6",
-    description: "Source code snippets with language syntax",
-    contentPlaceholder: "// Paste your code snippet here...",
-  },
-  prompt: {
-    name: "Prompt",
-    icon: Sparkles,
-    color: "#8b5cf6",
-    description: "LLM prompts, system instructions, or templates",
-    contentPlaceholder: "Enter your AI prompt or system instructions...",
-  },
-  command: {
-    name: "Command",
-    icon: Terminal,
-    color: "#f97316",
-    description: "Terminal commands, shell one-liners, or scripts",
-    contentPlaceholder: "docker run -d -p 3000:3000 --name my-app...",
-  },
-  note: {
-    name: "Note",
-    icon: StickyNote,
-    color: "#fde047",
-    description: "Quick notes, thoughts, or documentation",
-    contentPlaceholder: "Write your thoughts, ideas, or markdown notes...",
-  },
-  link: {
-    name: "Link",
-    icon: LinkIcon,
-    color: "#10b981",
-    description: "Bookmarks, references, or documentation links",
-    contentPlaceholder: "",
-  },
-  file: {
-    name: "File",
-    icon: FileText,
-    color: "#6b7280",
-    description: "Documents, configuration files, and data attachments",
-    contentPlaceholder: "",
-  },
-  image: {
-    name: "Image",
-    icon: ImageIcon,
-    color: "#ec4899",
-    description: "Screenshots, architecture diagrams, and image references",
-    contentPlaceholder: "",
-  },
-};
 
 export function CreateItemDialog({
   open,
@@ -284,100 +204,14 @@ export function CreateItemDialog({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
             {/* Type Selector Dropdown */}
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">
-                Item Type
-              </label>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  type="button"
-                  className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-border/70 bg-background/60 dark:bg-input/30 hover:bg-muted/40 transition-colors cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div
-                      className="size-6 rounded-md flex items-center justify-center shrink-0 border"
-                      style={{
-                        backgroundColor: `color-mix(in srgb, ${activeConfig.color} 15%, transparent)`,
-                        borderColor: `color-mix(in srgb, ${activeConfig.color} 35%, transparent)`,
-                        color: activeConfig.color,
-                      }}
-                    >
-                      <activeConfig.icon
-                        className="size-3.5"
-                        style={{ color: activeConfig.color }}
-                      />
-                    </div>
-                    <span className="font-semibold text-xs sm:text-sm text-foreground">
-                      {activeConfig.name}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground hidden sm:inline truncate">
-                      — {activeConfig.description}
-                    </span>
-                  </div>
-                  <ChevronDown className="size-4 text-muted-foreground shrink-0 ml-1.5" />
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent
-                  align="start"
-                  className="w-(--anchor-width) min-w-[280px] max-h-72 overflow-y-auto p-1.5 rounded-lg border border-border/80 bg-popover text-popover-foreground shadow-xl"
-                >
-                  <DropdownMenuLabel className="px-2 py-1 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                    Select Item Type
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="my-1 bg-border/60" />
-
-                  {CREATION_ITEM_TYPES.map((typeKey) => {
-                    const config = TYPE_CONFIG[typeKey];
-                    const Icon = config.icon;
-                    const isSelected = selectedType === typeKey;
-
-                    return (
-                      <DropdownMenuItem
-                        key={typeKey}
-                        onClick={() => {
-                          setSelectedType(typeKey);
-                          setError(null);
-                        }}
-                        className={cn(
-                          "flex items-center justify-between gap-3 p-2 rounded-lg cursor-pointer transition-colors text-xs",
-                          isSelected
-                            ? "bg-accent text-accent-foreground font-medium"
-                            : "hover:bg-muted/50 text-foreground"
-                        )}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div
-                            className="size-7 rounded-md flex items-center justify-center shrink-0 border"
-                            style={{
-                              backgroundColor: `color-mix(in srgb, ${config.color} 15%, transparent)`,
-                              borderColor: `color-mix(in srgb, ${config.color} 35%, transparent)`,
-                              color: config.color,
-                            }}
-                          >
-                            <Icon
-                              className="size-3.5"
-                              style={{ color: config.color }}
-                            />
-                          </div>
-                          <div className="min-w-0 flex flex-col text-left">
-                            <span className="font-semibold text-xs text-foreground">
-                              {config.name}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground line-clamp-1">
-                              {config.description}
-                            </span>
-                          </div>
-                        </div>
-
-                        {isSelected && (
-                          <Check className="size-4 text-primary shrink-0 ml-2" />
-                        )}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <ItemTypeSelector
+              selectedType={selectedType}
+              onSelectType={(type) => {
+                setSelectedType(type);
+                setError(null);
+              }}
+              disabled={isSubmitting}
+            />
 
             {/* Title Field (Required) */}
             <div>
