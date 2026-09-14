@@ -418,9 +418,12 @@ In Progress
   - Reduced `create-item-dialog.tsx` from 602 lines down to 433 lines.
 - **Task 4: MarkdownEditor Decomposition (`src/components/ui/markdown-editor.tsx`):**
   - Extracted 181-line `markdownComponents` definition and `cleanProps` helper into reusable `src/components/ui/markdown-components.tsx`.
-  - Reduced `markdown-editor.tsx` from 439 lines down to 257 lines (~41% reduction), isolating Markdown AST HTML rendering rules from interactive editor state and copy operations.
+- **Task 5: Shared Auth & Demo-User Guard (`src/lib/auth-guards.ts`):**
+  - Created `getAuthenticatedUserId()` in `src/lib/auth-guards.ts` resolving session user ID with safe fallback for non-request contexts and demo user resolution.
+  - Refactored `src/actions/items.ts` (`updateItemAction`, `deleteItemAction`, `createItemAction`), `src/app/api/upload/route.ts`, `src/app/api/files/download/route.ts`, and `src/app/api/items/[id]/route.ts`, replacing 6 duplicate 14-line try/catch blocks with a single clean guard call.
 - **Verification:**
   - 100% passing across Vitest unit tests (221/221 tests passed).
   - 100% passing across integration tests (`test:items`, `test:create`, `test:edit`, `test:delete`).
   - ESLint passing with 0 errors and 0 warnings.
   - Next.js production build (`npm run build`) passing cleanly.
+
