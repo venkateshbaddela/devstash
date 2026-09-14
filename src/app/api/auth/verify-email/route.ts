@@ -22,6 +22,12 @@ export async function GET(request: Request) {
           { status: 400 }
         );
       }
+      if (result.error === "EMAIL_ALREADY_IN_USE") {
+        return NextResponse.json(
+          { error: "This email address is already in use by another account." },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
         { error: "Invalid verification token" },
         { status: 400 }
@@ -62,6 +68,12 @@ export async function POST(request: Request) {
       if (result.error === "TOKEN_EXPIRED") {
         return NextResponse.json(
           { error: "Verification token has expired. Please request a new one." },
+          { status: 400 }
+        );
+      }
+      if (result.error === "EMAIL_ALREADY_IN_USE") {
+        return NextResponse.json(
+          { error: "This email address is already in use by another account." },
           { status: 400 }
         );
       }

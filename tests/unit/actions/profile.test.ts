@@ -5,9 +5,13 @@ import {
   updateNameAction,
   changePasswordAction,
   deleteAccountAction,
+  updateProfileDetailsAction,
+  updateEmailAction,
 } from "@/actions/profile";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { generateEmailChangeToken } from "@/lib/tokens";
+import { sendVerificationEmail } from "@/lib/mail";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -16,6 +20,14 @@ vi.mock("next/cache", () => ({
 vi.mock("@/auth", () => ({
   auth: vi.fn(),
   signOut: vi.fn(),
+}));
+
+vi.mock("@/lib/tokens", () => ({
+  generateEmailChangeToken: vi.fn().mockResolvedValue({ token: "test-token-123" }),
+}));
+
+vi.mock("@/lib/mail", () => ({
+  sendVerificationEmail: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -231,6 +243,118 @@ describe("Profile Server Actions", () => {
       const result = await deleteAccountAction("wrong@example.com");
       expect(result.success).toBe(false);
       expect(result.error).toContain("Confirmation email does not match");
+    });
+  });
+
+  describe("updateProfileDetailsAction", () => {
+    it("fails when unauthenticated", async () => {
+      mockAuth.mockResolvedValue(null);
+
+      const result = await updateProfileDetailsAction("Test Name", "test@example.com");
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("You must be signed in to update your profile details.");
+    });
+
+    it("updates display name only without touching email when email is unchanged", async () => {
+      mockAuth.mockResolvedValue(createMockSession("user@example.com", "user-1"));
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: "user-1",
+        name: "Old Name",
+        email: "user@example.com",
+        accounts: [],
+      } as never);
+
+      const result = await updateProfileDetailsAction("New Name", "user@example.com");
+
+      expect(result.success).toBe(true);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+        data: { name: "New Name" },
+      });
+      expect(generateEmailChangeToken).not.toHaveBeenCalled();
+    });
+
+    it("sends verification token and does not update user.email in database when email changes", async () => {
+      mockAuth.mockResolvedValue(createMockSession("old@example.com", "user-1"));
+      vi.mocked(prisma.user.findUnique)
+        .mockResolvedValueOnce({
+          id: "user-1",
+          name: "Current Name",
+          email: "old@example.com",
+          accounts: [],
+        } as never) // currentUser lookup
+        .mockResolvedValueOnce(null); // conflict check for new@example.com
+
+      const result = await updateProfileDetailsAction("Updated Name", "new@example.com");
+
+      expect(result.success).toBe(true);
+      expect(result.data?.emailChanged).toBe(true);
+      expect(generateEmailChangeToken).toHaveBeenCalledWith("user-1", "new@example.com");
+      expect(sendVerificationEmail).toHaveBeenCalledWith("new@example.com", "test-token-123");
+      // user.email must NOT be updated in database yet
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+        data: { name: "Updated Name" },
+      });
+      expect(prisma.user.update).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ email: "new@example.com" }),
+        })
+      );
+    });
+
+    it("fails if new email is already used by another account", async () => {
+      mockAuth.mockResolvedValue(createMockSession("old@example.com", "user-1"));
+      vi.mocked(prisma.user.findUnique)
+        .mockResolvedValueOnce({
+          id: "user-1",
+          name: "Current Name",
+          email: "old@example.com",
+          accounts: [],
+        } as never) // currentUser
+        .mockResolvedValueOnce({
+          id: "victim-account",
+          email: "taken@example.com",
+        } as never); // conflict check
+
+      const result = await updateProfileDetailsAction("Name", "taken@example.com");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("already in use by another account");
+      expect(generateEmailChangeToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("updateEmailAction", () => {
+    it("fails if new email matches current email", async () => {
+      mockAuth.mockResolvedValue(createMockSession("current@example.com", "user-1"));
+      vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+        id: "user-1",
+        email: "current@example.com",
+        accounts: [],
+      } as never);
+
+      const result = await updateEmailAction("current@example.com");
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("New email matches your current email address");
+    });
+
+    it("sends email change verification and does not overwrite user.email in database", async () => {
+      mockAuth.mockResolvedValue(createMockSession("current@example.com", "user-1"));
+      vi.mocked(prisma.user.findUnique)
+        .mockResolvedValueOnce({
+          id: "user-1",
+          email: "current@example.com",
+          accounts: [],
+        } as never) // currentUser
+        .mockResolvedValueOnce(null); // conflict check for new-email@example.com
+
+      const result = await updateEmailAction("new-email@example.com");
+
+      expect(result.success).toBe(true);
+      expect(generateEmailChangeToken).toHaveBeenCalledWith("user-1", "new-email@example.com");
+      expect(sendVerificationEmail).toHaveBeenCalledWith("new-email@example.com", "test-token-123");
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 });

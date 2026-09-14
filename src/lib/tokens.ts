@@ -65,12 +65,70 @@ export async function getVerificationTokenByEmail(email: string) {
   }
 }
 
-export type VerifyTokenResult =
-  | { success: true; email: string }
-  | { success: false; error: "TOKEN_NOT_FOUND" | "TOKEN_EXPIRED" | "USER_NOT_FOUND" };
+export const EMAIL_CHANGE_PREFIX = "email-change:";
+
+export function getEmailChangeIdentifier(userId: string, newEmail: string): string {
+  return `${EMAIL_CHANGE_PREFIX}${userId}:${newEmail.trim().toLowerCase()}`;
+}
+
+export function parseEmailChangeIdentifier(
+  identifier: string
+): { userId: string; newEmail: string } | null {
+  if (!identifier.startsWith(EMAIL_CHANGE_PREFIX)) {
+    return null;
+  }
+  const rest = identifier.slice(EMAIL_CHANGE_PREFIX.length);
+  const colonIdx = rest.indexOf(":");
+  if (colonIdx === -1) return null;
+  const userId = rest.slice(0, colonIdx);
+  const newEmail = rest.slice(colonIdx + 1);
+  if (!userId || !newEmail) return null;
+  return { userId, newEmail };
+}
 
 /**
- * Validate a verification token, update the corresponding user's emailVerified status,
+ * Generate and store a new email change verification token for an authenticated user.
+ * Deletes any existing pending email change tokens for this user.
+ */
+export async function generateEmailChangeToken(
+  userId: string,
+  newEmail: string,
+  tx?: Prisma.TransactionClient
+) {
+  const db = tx ?? prisma;
+  const identifier = getEmailChangeIdentifier(userId, newEmail);
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + TOKEN_EXPIRATION_HOURS * 60 * 60 * 1000);
+
+  // Remove any existing pending email change tokens for this user
+  await db.verificationToken.deleteMany({
+    where: {
+      identifier: {
+        startsWith: `${EMAIL_CHANGE_PREFIX}${userId}:`,
+      },
+    },
+  });
+
+  const verificationToken = await db.verificationToken.create({
+    data: {
+      identifier,
+      token,
+      expires,
+    },
+  });
+
+  return verificationToken;
+}
+
+export type VerifyTokenResult =
+  | { success: true; email: string; isEmailChange?: boolean }
+  | {
+      success: false;
+      error: "TOKEN_NOT_FOUND" | "TOKEN_EXPIRED" | "USER_NOT_FOUND" | "EMAIL_ALREADY_IN_USE";
+    };
+
+/**
+ * Validate a verification token, update the corresponding user's email / emailVerified status,
  * and remove the consumed token from the database.
  */
 export async function verifyToken(token: string): Promise<VerifyTokenResult> {
@@ -82,11 +140,60 @@ export async function verifyToken(token: string): Promise<VerifyTokenResult> {
 
   const hasExpired = new Date(tokenRecord.expires) < new Date();
   if (hasExpired) {
-    // Delete expired token to keep table clean
-    await prisma.verificationToken.delete({
-      where: { token },
-    }).catch(() => null);
+    try {
+      await prisma.verificationToken.delete({
+        where: { token },
+      });
+    } catch {
+      // Delete expired token to keep table clean
+    }
     return { success: false, error: "TOKEN_EXPIRED" };
+  }
+
+  // Handle email change verification
+  const emailChangeInfo = parseEmailChangeIdentifier(tokenRecord.identifier);
+  if (emailChangeInfo) {
+    const { userId, newEmail } = emailChangeInfo;
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      return { success: false, error: "USER_NOT_FOUND" };
+    }
+
+    // Ensure the new email hasn't been claimed by another account in the meantime
+    const emailClaimed = await prisma.user.findUnique({
+      where: { email: newEmail },
+    });
+
+    if (emailClaimed && emailClaimed.id !== userId) {
+      try {
+        await prisma.verificationToken.delete({
+          where: { token },
+        });
+      } catch {
+        // Ignore deletion error
+      }
+      return { success: false, error: "EMAIL_ALREADY_IN_USE" };
+    }
+
+    // Atomically update user email and emailVerified, and delete the token
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: newEmail,
+          emailVerified: new Date(),
+        },
+      }),
+      prisma.verificationToken.delete({
+        where: { token },
+      }),
+    ]);
+
+    return { success: true, email: newEmail, isEmailChange: true };
   }
 
   const existingUser = await prisma.user.findUnique({

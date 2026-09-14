@@ -75,6 +75,12 @@ export async function verifyEmailAction(token: string) {
           error: "This verification link has expired. Please request a new one.",
         };
       }
+      if (result.error === "EMAIL_ALREADY_IN_USE") {
+        return {
+          success: false,
+          error: "This email address is already in use by another account.",
+        };
+      }
       return { success: false, error: "Invalid or consumed verification link." };
     }
     return { success: true, email: result.email };

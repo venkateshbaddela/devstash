@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { generateVerificationToken } from "@/lib/tokens";
+import { generateEmailChangeToken } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/lib/mail";
 
 export interface ActionResult<T = unknown> {
@@ -137,15 +137,14 @@ export async function updateProfileDetailsAction(
         return { success: false, error: "This email address is already in use by another account." };
       }
 
-      const verificationToken = await generateVerificationToken(trimmedEmail);
+      const verificationToken = await generateEmailChangeToken(currentUser.id, trimmedEmail);
       await sendVerificationEmail(trimmedEmail, verificationToken.token);
 
+      // Only update name in database; user.email remains unchanged until verified
       await prisma.user.update({
         where: { id: currentUser.id },
         data: {
           name: trimmedName,
-          email: trimmedEmail,
-          emailVerified: null,
         },
       });
 
@@ -168,11 +167,11 @@ export async function updateProfileDetailsAction(
       success: true,
       data: {
         name: trimmedName,
-        email: trimmedEmail,
+        email: currentUser.email || trimmedEmail,
         emailChanged,
       },
       message: emailChanged
-        ? "Profile updated! A verification link has been sent to your new email. Please verify to keep your account active."
+        ? `Profile name updated! A verification link has been sent to ${trimmedEmail}. Please verify the link to update your email address.`
         : "Profile details updated successfully.",
     };
   } catch (err) {
@@ -285,16 +284,11 @@ export async function updateEmailAction(
       return { success: false, error: "This email address is already in use by another account." };
     }
 
-    const verificationToken = await generateVerificationToken(trimmedEmail);
+    const verificationToken = await generateEmailChangeToken(currentUser.id, trimmedEmail);
     await sendVerificationEmail(trimmedEmail, verificationToken.token);
 
-    await prisma.user.update({
-      where: { id: currentUser.id },
-      data: {
-        email: trimmedEmail,
-        emailVerified: null,
-      },
-    });
+    // Do NOT update user.email in the database prior to verification!
+    // The email will be updated atomically when the user clicks the verification link.
 
     revalidatePath("/profile");
     revalidatePath("/settings");
@@ -303,8 +297,8 @@ export async function updateEmailAction(
 
     return {
       success: true,
-      data: { email: trimmedEmail },
-      message: "Email updated! A verification link has been sent to your new email. Please verify to keep your account active.",
+      data: { email: currentUser.email || trimmedEmail },
+      message: `A verification link has been sent to ${trimmedEmail}. Please verify the link to complete your email change.`,
     };
   } catch (err) {
     console.error("updateEmailAction error:", err);

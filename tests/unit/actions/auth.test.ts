@@ -161,6 +161,17 @@ describe("Auth Server Actions", () => {
       expect(res.success).toBe(true);
       expect(res.email).toBe("verified@example.com");
     });
+
+    it("handles email already claimed by another user", async () => {
+      vi.mocked(verifyToken).mockResolvedValue({
+        success: false,
+        error: "EMAIL_ALREADY_IN_USE",
+      });
+
+      const res = await verifyEmailAction("conflict-token");
+      expect(res.success).toBe(false);
+      expect(res.error).toContain("This email address is already in use by another account.");
+    });
   });
 
   describe("requestPasswordResetAction", () => {
