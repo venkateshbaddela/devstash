@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Star,
@@ -20,7 +20,6 @@ import {
   AlertCircle,
   RefreshCw,
   Loader2,
-  X,
   Maximize2,
 } from "lucide-react";
 import {
