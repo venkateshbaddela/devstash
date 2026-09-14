@@ -11,6 +11,10 @@ export interface DashboardItem {
   contentType: string;
   url: string | null;
   language: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  mimeType?: string | null;
   isFavorite: boolean;
   isPinned: boolean;
   type: string;
@@ -34,6 +38,10 @@ interface PrismaItemWithRelations {
   contentType: string;
   url?: string | null;
   language?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: bigint | number | null;
+  mimeType?: string | null;
   isFavorite: boolean;
   isPinned: boolean;
   createdAt: Date;
@@ -54,6 +62,10 @@ const DASHBOARD_ITEM_SELECT = {
   title: true,
   description: true,
   contentType: true,
+  fileUrl: true,
+  fileName: true,
+  fileSize: true,
+  mimeType: true,
   isFavorite: true,
   isPinned: true,
   createdAt: true,
@@ -91,6 +103,10 @@ function mapToDashboardItem(item: PrismaItemWithRelations): DashboardItem {
     contentType: item.contentType,
     url: item.url ?? null,
     language: item.language ?? null,
+    fileUrl: item.fileUrl ?? null,
+    fileName: item.fileName ?? null,
+    fileSize: item.fileSize ? Number(item.fileSize) : null,
+    mimeType: item.mimeType ?? null,
     isFavorite: item.isFavorite,
     isPinned: item.isPinned,
     type: item.itemType.name,

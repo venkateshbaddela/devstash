@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Loader2,
   X,
+  Maximize2,
 } from "lucide-react";
 import {
   Sheet,
@@ -29,6 +30,12 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -63,6 +70,7 @@ export function ItemDrawer() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   // Form states for edit mode
   const [title, setTitle] = useState("");
@@ -124,12 +132,14 @@ export function ItemDrawer() {
   if (displayId !== prevDisplayId) {
     setPrevDisplayId(displayId);
     setIsEditing(false);
+    setIsImageModalOpen(false);
     setToast(null);
   }
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setIsEditing(false);
+      setIsImageModalOpen(false);
       setToast(null);
       closeDrawer();
     }
@@ -831,64 +841,100 @@ export function ItemDrawer() {
                       {item.url}
                     </span>
                   </a>
-                ) : (lowerType === "image" || item?.mimeType?.startsWith("image/")) && (item?.fileUrl || item?.storageKey) ? (
-                  <div className="space-y-3 rounded-xl border border-border/80 bg-zinc-950/80 p-3.5 sm:p-4 overflow-hidden">
-                    {/* Image Preview Canvas */}
-                    <div className="rounded-lg overflow-hidden border border-border/60 bg-zinc-900/90 flex items-center justify-center min-h-[180px] max-h-[420px]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={
-                          item.fileUrl
-                            ? item.fileUrl.includes("?")
-                              ? `${item.fileUrl}&inline=true`
-                              : `${item.fileUrl}?inline=true`
-                            : `/api/files/download?key=${encodeURIComponent(
-                                item.storageKey || ""
-                              )}&filename=${encodeURIComponent(
-                                item.fileName || "image"
-                              )}&inline=true`
-                        }
-                        alt={item.title || item.fileName || "Image preview"}
-                        className="max-h-[420px] w-auto max-w-full object-contain"
-                        loading="lazy"
-                      />
-                    </div>
+                ) : (lowerType === "image" || item?.mimeType?.startsWith("image/")) && (item?.fileUrl || item?.storageKey) ? (() => {
+                  const imageSrc = item.fileUrl
+                    ? item.fileUrl.includes("?")
+                      ? `${item.fileUrl}&inline=true`
+                      : `${item.fileUrl}?inline=true`
+                    : `/api/files/download?key=${encodeURIComponent(
+                        item.storageKey || ""
+                      )}&filename=${encodeURIComponent(
+                        item.fileName || "image"
+                      )}&inline=true`;
 
-                    {/* Metadata & Actions Bar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                      <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                          {item.fileName || item.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {formatFileSize(item.fileSize)}
-                          {item.mimeType ? ` • ${item.mimeType}` : ""}
-                        </p>
+                  const downloadUrl =
+                    item.fileUrl ||
+                    `/api/files/download?key=${encodeURIComponent(
+                      item.storageKey || ""
+                    )}&filename=${encodeURIComponent(
+                      item.fileName || "image"
+                    )}`;
+
+                  return (
+                    <div className="space-y-3 rounded-xl border border-border/80 bg-zinc-950/80 p-3.5 sm:p-4 overflow-hidden">
+                      {/* Image Preview Canvas - Click to open full image modal */}
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setIsImageModalOpen(true)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setIsImageModalOpen(true);
+                          }
+                        }}
+                        className="group/img relative rounded-lg overflow-hidden border border-border/60 bg-zinc-900/90 flex items-center justify-center min-h-[180px] max-h-[420px] cursor-zoom-in transition-all hover:border-border select-none"
+                        title="Click to view full image"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={imageSrc}
+                          alt={item.title || item.fileName || "Image preview"}
+                          className="max-h-[420px] w-auto max-w-full object-contain transition-transform duration-200 group-hover/img:scale-[1.01]"
+                          loading="lazy"
+                        />
+
+                        {/* Hover Overlay with Expand Icon */}
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-xs border border-white/20 text-white text-xs font-medium shadow-lg">
+                            <Maximize2 className="size-3.5" />
+                            <span>Click to expand</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <a
-                        href={
-                          item.fileUrl ||
-                          `/api/files/download?key=${encodeURIComponent(
-                            item.storageKey || ""
-                          )}&filename=${encodeURIComponent(
-                            item.fileName || "image"
-                          )}`
-                        }
-                        download={item.fileName || "image"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={cn(
-                          buttonVariants({ variant: "outline", size: "sm" }),
-                          "h-8 px-3 gap-1.5 text-xs font-medium shrink-0 cursor-pointer"
-                        )}
-                      >
-                        <Download className="size-3.5" />
-                        <span>Download Image</span>
-                      </a>
+                      {/* Metadata & Actions Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                            {item.fileName || item.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatFileSize(item.fileSize)}
+                            {item.mimeType ? ` • ${item.mimeType}` : ""}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsImageModalOpen(true)}
+                            className="h-8 px-3 gap-1.5 text-xs font-medium cursor-pointer"
+                          >
+                            <Maximize2 className="size-3.5" />
+                            <span>View Full</span>
+                          </Button>
+
+                          <a
+                            href={downloadUrl}
+                            download={item.fileName || "image"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              buttonVariants({ variant: "outline", size: "sm" }),
+                              "h-8 px-3 gap-1.5 text-xs font-medium shrink-0 cursor-pointer"
+                            )}
+                          >
+                            <Download className="size-3.5" />
+                            <span>Download</span>
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ) : item?.fileName ? (
+                  );
+                })() : item?.fileName ? (
                   <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-border/80 bg-muted/30 text-xs sm:text-sm">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="p-2 rounded-lg bg-muted/60 border border-border/60 shrink-0">
@@ -1054,6 +1100,101 @@ export function ItemDrawer() {
           router.refresh();
         }}
       />
+    )}
+
+    {/* Full Image Modal */}
+    {item && (lowerType === "image" || item?.mimeType?.startsWith("image/")) && (item.fileUrl || item.storageKey) && (
+      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent
+          className="w-[95vw] sm:w-[90vw] md:max-w-5xl max-h-[92vh] p-0 overflow-hidden border-border/80 bg-zinc-950/95 backdrop-blur-xl shadow-2xl flex flex-col gap-0 z-[60]"
+          showCloseButton={true}
+        >
+          {/* Modal Header */}
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-border/60 bg-zinc-900/60 shrink-0">
+            <div className="min-w-0 pr-8">
+              <DialogTitle className="text-sm sm:text-base font-semibold text-foreground truncate">
+                {item.title || item.fileName || "Image"}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5 truncate">
+                {item.fileName ? `${item.fileName} • ` : ""}
+                {formatFileSize(item.fileSize)}
+                {item.mimeType ? ` • ${item.mimeType}` : ""}
+              </DialogDescription>
+            </div>
+          </div>
+
+          {/* Centered Image Canvas */}
+          <div className="flex-1 min-h-0 flex items-center justify-center p-3 sm:p-6 bg-zinc-950/80 overflow-auto">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={
+                item.fileUrl
+                  ? item.fileUrl.includes("?")
+                    ? `${item.fileUrl}&inline=true`
+                    : `${item.fileUrl}?inline=true`
+                  : `/api/files/download?key=${encodeURIComponent(
+                      item.storageKey || ""
+                    )}&filename=${encodeURIComponent(
+                      item.fileName || "image"
+                    )}&inline=true`
+              }
+              alt={item.title || item.fileName || "Full image"}
+              className="max-h-[72vh] w-auto max-w-full object-contain rounded-md shadow-lg select-none"
+            />
+          </div>
+
+          {/* Modal Footer with Actions */}
+          <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 border-t border-border/60 bg-zinc-900/60 shrink-0">
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              Press <kbd className="px-1.5 py-0.5 rounded bg-muted/60 text-[10px] font-mono border border-border/60">Esc</kbd> or click outside to close
+            </span>
+            <div className="flex items-center gap-2 ml-auto">
+              <a
+                href={
+                  item.fileUrl ||
+                  `/api/files/download?key=${encodeURIComponent(
+                    item.storageKey || ""
+                  )}&filename=${encodeURIComponent(
+                    item.fileName || "image"
+                  )}`
+                }
+                download={item.fileName || "image"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "h-8 px-3 gap-1.5 text-xs font-medium cursor-pointer"
+                )}
+              >
+                <Download className="size-3.5" />
+                <span>Download</span>
+              </a>
+              <a
+                href={
+                  item.fileUrl
+                    ? item.fileUrl.includes("?")
+                      ? `${item.fileUrl}&inline=true`
+                      : `${item.fileUrl}?inline=true`
+                    : `/api/files/download?key=${encodeURIComponent(
+                        item.storageKey || ""
+                      )}&filename=${encodeURIComponent(
+                        item.fileName || "image"
+                      )}&inline=true`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  buttonVariants({ variant: "secondary", size: "sm" }),
+                  "h-8 px-3 gap-1.5 text-xs font-medium cursor-pointer"
+                )}
+              >
+                <ExternalLink className="size-3.5" />
+                <span>Open in New Tab</span>
+              </a>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     )}
   </>
   );

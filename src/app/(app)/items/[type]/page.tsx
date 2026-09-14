@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { auth } from "@/auth";
 import { getItemsByType, resolveItemTypeBySlug } from "@/lib/db/items";
 import { ItemCard } from "@/components/dashboard/item-card";
+import { ImageCard } from "@/components/items/image-card";
 import { ItemTypeIcon } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -124,13 +125,21 @@ export default async function ItemTypePage({ params }: ItemTypePageProps) {
         )}
       </div>
 
-      {/* Responsive Grid: 1 column on mobile, 2 columns on tablet, 3 columns on larger screens */}
+      {/* Responsive Grid: Image Gallery (3 columns) for images, standard responsive grid for other types */}
       {items.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </div>
+        normalizedType === "image" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
+            {items.map((item) => (
+              <ImageCard key={item.id} item={item} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+            {items.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        )
       ) : isFileOrImage ? (
         <FileImageEmptyDropzone
           type={normalizedType as "file" | "image"}

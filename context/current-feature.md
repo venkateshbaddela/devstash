@@ -1,22 +1,33 @@
-# Current Feature
+# Current Feature: Image Gallery View
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Create a dedicated image thumbnail card component to replace the standard item card for image items
+- Display image thumbnails with 16:9 aspect ratio (`aspect-video`) using `object-cover`
+- Add subtle hover zoom effect (5% scale with 300ms transition)
+- Render clean 3-column image grid on larger screens matching Devstash layout
+- Include essential overlay or footer details (title, favorite/pin badges, tag pills)
+- Connect click interaction seamlessly to `ItemDrawer`
+- Enable full image modal viewer with zoom/actions when clicking the image preview in `ItemDrawer`
+- Maintain aesthetic, dark-mode native, high-polish UI/UX without over-engineering
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- Spec file: [image-display--spec.md](file:///workspaces/devstash/context/features/image-display--spec.md)
+- Target: `/items/images` route in `src/app/(app)/items/[type]/page.tsx`
+- Aspect ratio: `aspect-video` (16:9) with `object-cover` to fill cards
+- Hover animation: `hover:scale-105 transition-transform duration-300`
+- Keep implementation clean and avoid over-engineering
 
 ---
 
