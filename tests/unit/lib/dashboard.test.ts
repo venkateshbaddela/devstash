@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import DashboardPage from "@/app/(app)/dashboard/page";
 import { auth } from "@/auth";
+
+const mockAuth = auth as unknown as Mock;
 import {
   getDashboardCollections,
   getCollectionStats,
@@ -48,7 +50,7 @@ describe("Dashboard Page User Isolation", () => {
   });
 
   it("retrieves session and passes authenticated userId to all dashboard queries", async () => {
-    vi.mocked(auth).mockResolvedValue({
+    mockAuth.mockResolvedValue({
       user: { id: "user-abc-456", email: "alice@example.com" },
       expires: "2099-01-01",
     });
@@ -64,7 +66,7 @@ describe("Dashboard Page User Isolation", () => {
   });
 
   it("passes undefined when unauthenticated, falling back gracefully", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    mockAuth.mockResolvedValue(null);
 
     await DashboardPage();
 

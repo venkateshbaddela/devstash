@@ -95,7 +95,9 @@ describe("Email Change Token Management", () => {
       const result = await verifyToken("tok-1");
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe("EMAIL_ALREADY_IN_USE");
+      if (!result.success) {
+        expect(result.error).toBe("EMAIL_ALREADY_IN_USE");
+      }
       expect(prisma.user.update).not.toHaveBeenCalled();
     });
 
@@ -113,8 +115,10 @@ describe("Email Change Token Management", () => {
       const result = await verifyToken("tok-1");
 
       expect(result.success).toBe(true);
-      expect(result.email).toBe("brandnew@example.com");
-      expect(result.isEmailChange).toBe(true);
+      if (result.success) {
+        expect(result.email).toBe("brandnew@example.com");
+        expect(result.isEmailChange).toBe(true);
+      }
 
       expect(prisma.$transaction).toHaveBeenCalled();
       expect(prisma.user.update).toHaveBeenCalledWith({
