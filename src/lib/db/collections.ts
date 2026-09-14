@@ -68,14 +68,12 @@ export async function getDashboardCollections(
     take: limit,
     include: {
       items: {
-        include: {
+        take: 100,
+        select: {
           item: {
             select: {
-              id: true,
-              contentType: true,
               itemType: {
                 select: {
-                  id: true,
                   name: true,
                   icon: true,
                   color: true,
@@ -141,12 +139,13 @@ export async function getDashboardCollections(
 }
 
 /**
- * Fetches all collections for a user.
+ * Fetches collections for a user with a bounded default limit.
  */
 export async function getCollections(
-  userId?: string
+  userId?: string,
+  limit = 50
 ): Promise<DashboardCollection[]> {
-  return getDashboardCollections(userId, undefined);
+  return getDashboardCollections(userId, limit);
 }
 
 /**
