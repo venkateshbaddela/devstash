@@ -1,4 +1,4 @@
-import NextAuth, { CredentialsSignin, type User, type Account, type Profile } from "next-auth";
+import NextAuth, { CredentialsSignin, type User, type Account, type Profile, type Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import type { AdapterUser } from "@auth/core/adapters";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -16,49 +16,8 @@ class RateLimitError extends CredentialsSignin {
   code = "rate_limited";
 }
 
-export async function jwtCallback({
-  token,
-  user,
-}: {
-  token: JWT;
-  user?: User | AdapterUser;
-  account?: Account | null;
-  profile?: Profile;
-  trigger?: "signIn" | "signUp" | "update";
-  isNewUser?: boolean;
-  session?: unknown;
-}) {
-  if (user) {
-    token.id = user.id;
-    const tokenVersion = (user as User).tokenVersion;
-    if (typeof tokenVersion === "number") {
-      token.tokenVersion = tokenVersion;
-    } else if (user.id) {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { tokenVersion: true },
-      });
-      token.tokenVersion = dbUser?.tokenVersion ?? 0;
-    } else {
-      token.tokenVersion = 0;
-    }
-    return token;
-  }
-
-  // Invalidate JWT session if user does not exist or tokenVersion does not match
-  if (token.id) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: token.id as string },
-      select: { tokenVersion: true },
-    });
-
-    if (!dbUser || dbUser.tokenVersion !== (token.tokenVersion ?? 0)) {
-      return null;
-    }
-  }
-
-  return token;
-}
+import { jwtCallback, sessionCallback } from "@/lib/auth-callbacks";
+export { jwtCallback, sessionCallback };
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -125,5 +84,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     jwt: jwtCallback,
+    session: sessionCallback,
   },
 });

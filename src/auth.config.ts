@@ -26,6 +26,9 @@ export const authConfig = {
         token.id = user.id;
         token.tokenVersion = user.tokenVersion ?? 0;
       }
+      if (typeof token.picture === "string" && (token.picture.startsWith("data:") || token.picture.length > 2048)) {
+        delete token.picture;
+      }
       return token;
     },
     session({ session, token }) {
