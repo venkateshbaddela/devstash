@@ -416,6 +416,9 @@ In Progress
   - Extracted centralized `TYPE_CONFIG` dictionary to `src/lib/constants/item-types.ts`.
   - Extracted 95-line dropdown type selector into reusable `src/components/items/item-type-selector.tsx`.
   - Reduced `create-item-dialog.tsx` from 602 lines down to 433 lines.
+- **Task 4: MarkdownEditor Decomposition (`src/components/ui/markdown-editor.tsx`):**
+  - Extracted 181-line `markdownComponents` definition and `cleanProps` helper into reusable `src/components/ui/markdown-components.tsx`.
+  - Reduced `markdown-editor.tsx` from 439 lines down to 257 lines (~41% reduction), isolating Markdown AST HTML rendering rules from interactive editor state and copy operations.
 - **Verification:**
   - 100% passing across Vitest unit tests (221/221 tests passed).
   - 100% passing across integration tests (`test:items`, `test:create`, `test:edit`, `test:delete`).
