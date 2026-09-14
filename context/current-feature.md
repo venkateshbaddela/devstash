@@ -384,3 +384,13 @@ Not Started
   - Verified all 14 integration test suites (`test:db`, `test:auth`, `test:reset`, `test:profile`, `test:rate-limit`, `test:length`, `test:atomic-reg`, `test:session`, `test:items`, `test:drawer`, `test:edit`, `test:delete`, `test:create`, `test:files`).
   - Verified UI end-to-end with Playwright MCP across Dashboard, ItemDrawer (view, edit, code preview), Image Gallery, Full-size Modal, Create Item Dialog, Profile, and Settings.
   - Clean ESLint (0 errors, 0 warnings) and clean production build (`npm run build`).
+
+### Dropzone Click-to-Select File Manager (2026-09-14)
+
+- Added native file manager picker trigger upon clicking anywhere on the empty dropzone box (`FileImageEmptyDropzone`) for `/items/files` and `/items/images`.
+- Integrated hidden `<input type="file" />` with extension and MIME type accept constraints matching Backblaze B2 storage rules (`IMAGE_CONSTRAINTS`, `FILE_CONSTRAINTS`).
+- Enforced `e.stopPropagation()` on "Create your first [File/Image]" and error alert dismiss buttons, ensuring manual dialog opening does not trigger the OS file manager.
+- Preserved drag-and-drop auto-staging, client constraint validation, and automatic pre-population of the item title and cloud upload in `CreateItemDialog`.
+- Provided visual feedback (`cursor-pointer`, hover highlight states, "Click to browse" prompt) and keyboard accessibility (`tabIndex={0}`, `role="region"`, `Enter`/`Space` key handlers).
+- Verified 100% passing across Vitest unit tests (221/221 passed), ESLint (`npm run lint`), Next.js production build (`npm run build`), and Playwright interaction tests.
+

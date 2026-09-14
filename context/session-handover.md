@@ -7,7 +7,7 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `fix(audit): full codebase audit remediation, security hardening, and performance optimizations`
+- **Last Commit:** `feat(items): add click-to-browse native file manager trigger to empty dropzone`
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint` - 0 errors, 0 warnings)
 - **Unit Tests:** 221 / 221 passing Vitest unit tests (`npm test`) across 19 test suites
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including `tokenVersion` column on `users` table).
