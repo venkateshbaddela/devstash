@@ -20,7 +20,7 @@
 | **Database** | Neon PostgreSQL | Hosted Postgres |
 | **ORM** | Prisma 7 | Migrations-only workflow (`prisma migrate dev`) |
 | **Auth** | Auth.js / NextAuth | GitHub OAuth & Email/Password |
-| **Storage** | Cloudflare R2 | S3-compatible storage for files and images (Pro) |
+| **Storage** | Backblaze B2 | S3-compatible object storage for files and images (Pro) |
 | **Payments** | Stripe | Customer portal, webhook-driven subscriptions |
 | **AI** | OpenAI API | Server-side abstraction for tags, summaries, prompts |
 | **Testing** | Vitest | Fast Node.js unit tests for Server Actions and utilities |
@@ -52,14 +52,14 @@ User
 | **Prompt** | Text | `Sparkles` | `#8b5cf6` (Purple) | AI system prompts, templates, and workflows |
 | **Command** | Text | `Terminal` | `#f97316` (Orange) | CLI commands, shell one-liners, scripts |
 | **Note** | Text | `StickyNote` | `#fde047` (Yellow) | Markdown documentation, scratch notes, checklists |
-| **File** | File | `File` | `#6b7280` (Gray) | Documents, PDFs, configs stored in R2 |
-| **Image** | File | `Image` | `#ec4899` (Pink) | Screenshots, architecture diagrams stored in R2 |
+| **File** | File | `File` | `#6b7280` (Gray) | Documents, PDFs, configs stored in B2 |
+| **Image** | File | `Image` | `#ec4899` (Pink) | Screenshots, architecture diagrams stored in B2 |
 | **Link** | URL | `Link` | `#10b981` (Green) | Bookmarks, documentation links, PR references |
 
 ### Storage Rules by `ContentType`
 - **`TEXT`** (Snippet, Prompt, Command, Note): `content` stores markdown/plain text; `fileUrl` is null.
 - **`URL`** (Link): `url` stores destination URL; `content` stores optional description/notes.
-- **`FILE`** (File, Image): Stored in Cloudflare R2; `fileUrl`, `fileName`, `fileSize`, `mimeType`, and `storageKey` tracked in database.
+- **`FILE`** (File, Image): Stored in Backblaze B2; `fileUrl`, `fileName`, `fileSize`, `mimeType`, and `storageKey` tracked in database.
 
 ### Core Relationships
 1. **Items & Collections (Many-to-Many):** An item does *not* live in a single folder; it can belong to multiple collections simultaneously (e.g., a hook can be in both "React Patterns" and "Interview Prep").
@@ -243,7 +243,7 @@ model ItemTag {
 | **Items Limit** | Up to 50 items | Unlimited |
 | **Collections Limit** | Up to 3 collections | Unlimited |
 | **Item Types** | Snippet, Prompt, Command, Note, Link | All types + Custom Types |
-| **File & Image Uploads** | ❌ None | ✅ Cloudflare R2 uploads |
+| **File & Image Uploads** | ❌ None | ✅ Backblaze B2 uploads |
 | **AI Features** | ❌ None | ✅ Auto-tagging, summaries, prompt optimizer |
 | **Data Export** | ❌ None | ✅ JSON & ZIP export |
 
@@ -269,7 +269,7 @@ model ItemTag {
 - Filtering by type, tag, and collection.
 
 ### Phase 4 — Pro Features & Storage
-- Cloudflare R2 integration for file and image uploads.
+- Backblaze B2 integration for file and image uploads.
 - Stripe subscription integration with webhooks.
 
 ### Phase 5 — AI Enhancements

@@ -7,9 +7,11 @@
 ## 1. Project Snapshot (Current State)
 
 - **Git Branch:** `main`
-- **Last Commit:** `feat(items): expand items list view grid to 3 columns on larger screens`
+- **Last Commit:** `feat(gallery): implement 3-column image gallery view and full image modal in drawer`
 - **Build & Lint:** 100% passing (`npm run build` and `npm run lint`)
+- **Unit Tests:** 183 / 183 passing Vitest unit tests (`npm test`) across 15 test suites
 - **Database Status:** Neon PostgreSQL connected, migrated, and fully seeded with realistic demo data (including `tokenVersion` column on `users` table).
+- **Object Storage:** Backblaze B2 S3-compatible cloud storage for file and image attachments.
 
 ---
 
@@ -107,13 +109,39 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 ### K. Unit Testing Infrastructure (Vitest)
 - **Framework & Config:** Configured Vitest 5 (`vitest.config.mts`) targeting Node.js environment (`environment: 'node'`) with automatic `.env` loading and path alias resolution (`@/*`, `~/*`).
 - **Target Scope:** Strictly scoped to Server Actions (`src/actions/`) and utilities (`src/lib/`). Excludes React components (`*.tsx`).
-- **Test Suites (61 passing unit tests):**
-  - `tests/unit/lib/rate-limit.test.ts`: Client IP extraction (priority order, proxy headers, whitespace trimming, fallbacks) and RFC-compliant 429 response formatting.
-  - `tests/unit/lib/icons.test.ts`: Lucide icon resolution across all 7 system types, plural/singular names, case-insensitivity, and fallback safety.
-  - `tests/unit/lib/auth-core.test.ts`: Input validation, token presence, length bounds (8–72 chars for bcrypt DoS defense), token consumption errors, and generic enumeration defense.
-  - `tests/unit/lib/items-slug.test.ts`: Slug resolution and normalization across singular/plural system types and PRO gating flags.
-  - `tests/unit/actions/profile.test.ts`: Avatar updates, display name limits, password change constraints, demo account safeguards, and session requirements.
-  - `tests/unit/actions/auth.test.ts`: Resend verification, email verification tokens, rate limit propagation, enumeration-safe generic messaging, and password reset delegation.
+- **Test Coverage (183 passing unit tests across 15 test suites):**
+  - Rate limiting (`lib/rate-limit.test.ts`), icons resolution (`lib/icons.test.ts`), auth core validation (`lib/auth-core.test.ts`), item slug normalization (`lib/items-slug.test.ts`), profile actions (`actions/profile.test.ts`), auth actions (`actions/auth.test.ts`), item queries & API (`lib/items-query.test.ts`, `lib/items-api.test.ts`), item server actions (`actions/items.test.ts`), monaco languages (`lib/monaco-languages.test.ts`), markdown utilities (`lib/markdown.test.ts`), storage service (`lib/storage.test.ts`), file constraints (`lib/file-constraints.test.ts`), upload API (`lib/upload-api.test.ts`), type creation buttons (`lib/create-type-button.test.ts`).
+
+### L. Item Detail Drawer & Interactive UI
+- **Drawer Architecture:** Slide-in `ItemDrawer` (`src/components/items/item-drawer.tsx`) built with shadcn `Sheet`, progressive loading skeleton, and color-coded type badges.
+- **Provider & Context:** `ItemDrawerProvider` in `src/components/items/item-drawer-context.tsx` provides item preview metadata, dynamic API fetching (`GET /api/items/[id]`), and global viewport-fixed toast notifications.
+- **Header Actions:** Quick star favorite, pin toggle, clipboard copy with temporary feedback, edit mode trigger, and destructive delete button.
+
+### M. Item Drawer Inline Edit Mode
+- **Inline Editing:** Toggle into edit mode within drawer without page navigation or modal popping.
+- **Input Validation & Mutation:** Zod validation (`updateItemSchema` in `src/lib/validations/items.ts`), transactional tag reconciliation, and `updateItemAction` Server Action in `src/actions/items.ts`.
+
+### N. Item Deletion with Confirmation Modal
+- **Accessible Alert Dialog:** Built accessible confirmation dialog using `@base-ui/react/alert-dialog` (`src/components/items/delete-item-dialog.tsx`).
+- **Cascading Cleanup & Storage Safety:** `deleteItem` cascades deletion of item relations and automatically deletes associated attachments from Backblaze B2 storage (`src/lib/storage.ts`).
+
+### O. Polymorphic Item Creation Dialog
+- **Dynamic Creation Form:** `CreateItemDialog` (`src/components/items/create-item-dialog.tsx`) dynamically adapts form fields according to selected item type (code/editor for snippets/commands, markdown for notes/prompts, URL for links, file upload for files/images).
+- **Trigger Points:** "New Item" button in `TopBar`, header "New [Type]" button (`CreateTypeItemButton`), and empty states.
+
+### P. Monaco Code Editor & Markdown Editor
+- **Monaco Code Editor (`src/components/ui/code-editor.tsx`):** Integrated `@monaco-editor/react` with custom `devstash-dark` palette, macOS window dots, auto-height sizing, and language formatting.
+- **Markdown Editor (`src/components/ui/markdown-editor.tsx`):** Tabbed Write/Preview editor with `react-markdown` and `remark-gfm` for notes and prompts.
+
+### Q. Cloud Storage & File/Image Upload (Backblaze B2)
+- **Object Storage Service (`src/lib/storage.ts`):** Direct upload and deletion via `@aws-sdk/client-s3` targeting Backblaze B2 with fallback CORS proxy download handler (`/api/files/download`).
+- **File Constraints:** Enforced in `src/lib/file-constraints.ts` (Images $\le 5$ MB, Files $\le 10$ MB).
+- **Dual Affordance Empty Dropzone (`src/components/items/file-image-empty-dropzone.tsx`):** Drag-and-drop auto-staging and native picker trigger for files and images list views.
+
+### R. Image Gallery View
+- **Dedicated Image Card (`src/components/items/image-card.tsx`):** 16:9 thumbnail ratio (`aspect-video`), `object-cover`, 5% hover zoom transition (`duration-300`), pin/star overlays, and tag pills.
+- **Responsive 3-Column Grid:** Clean layout on `/items/images`.
+- **Full-Size Modal Viewer:** High-resolution image preview modal in `ItemDrawer` with download and open-in-new-tab actions.
 
 ---
 
@@ -123,7 +151,7 @@ Overwrote `prisma/seed.ts` and executed `prisma db seed` against Neon:
 npm run dev         # Next.js dev server
 npm run build       # Next.js production build (Turbopack)
 npm run lint        # ESLint check
-npm test            # Run Vitest unit tests (Server Actions & utilities)
+npm test            # Run Vitest unit tests (183 tests across Server Actions & utilities)
 npm run test:unit   # Alias for npm test
 npm run test:watch  # Run Vitest unit tests in interactive watch mode
 npm run test:db     # Test Neon DB connection and print all demo data
@@ -135,6 +163,11 @@ npm run test:session # Run session invalidation token version tests
 npm run test:atomic-reg # Run atomic registration transaction tests
 npm run test:length  # Run password length constraint tests
 npm run test:items   # Run items list view integration tests
+npm run test:drawer  # Run item drawer integration tests
+npm run test:edit    # Run item edit integration tests
+npm run test:delete  # Run item deletion integration tests
+npm run test:create  # Run item creation integration tests
+npm run test:files   # Run file upload and storage integration tests
 npm run studio      # Launch Prisma Studio web GUI
 npm run db:migrate  # Run prisma migrate dev (dev schema changes)
 npm run db:deploy   # Run prisma migrate deploy (prod migrations)
@@ -159,7 +192,7 @@ npm run db:clean-users # Clean test users from DB
 
 ## 5. Logical Next Step
  
-Dynamic Items List View (`/items/[type]`) and Auth Infrastructure are complete, thoroughly tested, and merged into `main`. The logical next tasks based on our roadmap are:
-1. **Scope Dashboard to Active User & Filter by Collection:** Ensure `DashboardPage` receives `session.user.id` so users see their own items rather than demo data, and wire up `?collection=...` search param to filter dashboard items with an active filter badge.
-2. **Item Creation & Quick-View Flow:** Implement "New Item" and "New Collection" modals in `TopBar`, and an item details drawer with syntax-highlighted code and copy-to-clipboard.
-3. **Item CRUD Server Actions & Modals:** Implement edit and delete actions in `src/actions/items.ts` with optimistic UI updates and toast feedback.
+Core Item Knowledge Management (CRUD, Drawer, Editors, Backblaze B2 Upload, Image Gallery) is complete, thoroughly tested, and merged into `main`. The logical next tasks based on our roadmap are:
+1. **Scope Dashboard to Active User & Filter by Collection:** Ensure `DashboardPage` receives `session.user.id` so authenticated users see their own items, and wire up `?collection=...` search param to filter dashboard items with an active filter badge.
+2. **Collection CRUD & Management:** Implement "New Collection" creation modal in `TopBar`/sidebar and collection edit/delete actions.
+3. **Search & Command Palette (Phase 3):** Implement `⌘K` / `Ctrl+K` global command palette and full-text search across items, tags, and collections.
