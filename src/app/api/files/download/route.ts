@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { getDefaultUserId } from "@/lib/db/collections";
+import { getAuthenticatedUserId } from "@/lib/auth-guards";
 import { getFileFromB2 } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 import sharp from "sharp";
@@ -30,14 +29,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Authenticate user check (soft guard)
-    let session = null;
-    try {
-      session = await auth();
-    } catch {
-      // In standalone / non-request context
-    }
-
-    const userId = session?.user?.id ?? (await getDefaultUserId());
+    const userId = await getAuthenticatedUserId();
     if (!userId) {
       return NextResponse.json(
         { error: "Unauthorized. Please sign in to access files." },

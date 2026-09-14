@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
-import { getDefaultUserId } from "@/lib/db/collections";
+import { getAuthenticatedUserId } from "@/lib/auth-guards";
 import {
   updateItem as updateItemDb,
   deleteItem as deleteItemDb,
@@ -39,14 +38,7 @@ export async function updateItemAction(
       return { success: false, error: errorMsg };
     }
 
-    let session = null;
-    try {
-      session = await auth();
-    } catch {
-      // In tests or non-request context
-    }
-
-    const userId = session?.user?.id ?? (await getDefaultUserId());
+    const userId = await getAuthenticatedUserId();
     if (!userId) {
       return {
         success: false,
@@ -112,14 +104,7 @@ export async function deleteItemAction(
       return { success: false, error: "Item ID is required." };
     }
 
-    let session = null;
-    try {
-      session = await auth();
-    } catch {
-      // In tests or non-request context
-    }
-
-    const userId = session?.user?.id ?? (await getDefaultUserId());
+    const userId = await getAuthenticatedUserId();
     if (!userId) {
       return {
         success: false,
@@ -182,14 +167,7 @@ export async function createItemAction(
       return { success: false, error: errorMsg };
     }
 
-    let session = null;
-    try {
-      session = await auth();
-    } catch {
-      // In tests or non-request context
-    }
-
-    const userId = session?.user?.id ?? (await getDefaultUserId());
+    const userId = await getAuthenticatedUserId();
     if (!userId) {
       return {
         success: false,

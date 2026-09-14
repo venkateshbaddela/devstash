@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getAuthenticatedUserId } from "@/lib/auth-guards";
 import { getItemById } from "@/lib/db/items";
-import { getDefaultUserId } from "@/lib/db/collections";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -9,13 +8,7 @@ interface RouteParams {
 
 export async function GET(request: Request, { params }: RouteParams) {
   try {
-    let session = null;
-    try {
-      session = await auth();
-    } catch {
-      // Fallback if called outside of Next.js HTTP request context (e.g. testing)
-    }
-    const userId = session?.user?.id ?? (await getDefaultUserId());
+    const userId = await getAuthenticatedUserId();
 
     if (!userId) {
       return NextResponse.json(

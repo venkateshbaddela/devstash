@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { getDefaultUserId } from "@/lib/db/collections";
+import { getAuthenticatedUserId } from "@/lib/auth-guards";
 import { validateFileConstraints } from "@/lib/file-constraints";
 import { uploadFileToB2 } from "@/lib/storage";
 import { getClientIp, checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
@@ -8,14 +7,7 @@ import crypto from "node:crypto";
 
 export async function POST(req: NextRequest) {
   try {
-    let session = null;
-    try {
-      session = await auth();
-    } catch {
-      // In standalone / non-request context
-    }
-
-    const userId = session?.user?.id ?? (await getDefaultUserId());
+    const userId = await getAuthenticatedUserId();
     if (!userId) {
       return NextResponse.json(
         { error: "Unauthorized. You must be signed in to upload files." },
