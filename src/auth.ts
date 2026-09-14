@@ -1,6 +1,4 @@
-import NextAuth, { CredentialsSignin, type User, type Account, type Profile, type Session } from "next-auth";
-import type { JWT } from "next-auth/jwt";
-import type { AdapterUser } from "@auth/core/adapters";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
