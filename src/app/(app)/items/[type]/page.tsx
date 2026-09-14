@@ -15,6 +15,7 @@ import {
   CreationItemType,
   CREATION_ITEM_TYPES,
 } from "@/lib/validations/items";
+import { FileImageEmptyDropzone } from "@/components/items/file-image-empty-dropzone";
 
 interface ItemTypePageProps {
   params: Promise<{ type: string }>;
@@ -58,6 +59,7 @@ export default async function ItemTypePage({ params }: ItemTypePageProps) {
   const singularName =
     TYPE_SINGULAR_LABELS[normalizedType as CreationItemType] ||
     itemType.name.charAt(0).toUpperCase() + itemType.name.slice(1);
+  const isFileOrImage = normalizedType === "file" || normalizedType === "image";
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-10">
@@ -111,8 +113,8 @@ export default async function ItemTypePage({ params }: ItemTypePageProps) {
           </p>
         </div>
 
-        {/* Type-specific Action Button */}
-        {isCreatable && (
+        {/* Type-specific Action Button - Only show after first item is added */}
+        {isCreatable && items.length > 0 && (
           <div className="shrink-0 pl-12 sm:pl-0">
             <CreateTypeItemButton
               type={itemType.name}
@@ -129,6 +131,14 @@ export default async function ItemTypePage({ params }: ItemTypePageProps) {
             <ItemCard key={item.id} item={item} />
           ))}
         </div>
+      ) : isFileOrImage ? (
+        <FileImageEmptyDropzone
+          type={normalizedType as "file" | "image"}
+          displayName={itemType.displayName}
+          singularName={singularName}
+          icon={itemType.icon || itemType.name}
+          color={itemType.color}
+        />
       ) : (
         <div className="rounded-xl border border-dashed border-border/80 p-12 text-center text-sm text-muted-foreground flex flex-col items-center justify-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground">

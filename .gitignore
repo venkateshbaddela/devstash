@@ -45,3 +45,6 @@ next-env.d.ts
 # agents local config
 .agents/mcp_config.json
 .playwright-mcp/
+
+# dev storage fallback
+.dev-storage/

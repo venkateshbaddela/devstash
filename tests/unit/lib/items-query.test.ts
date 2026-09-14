@@ -42,6 +42,10 @@ vi.mock("@/lib/db/collections", () => ({
   getDefaultUserId: vi.fn().mockResolvedValue("demo-user-id"),
 }));
 
+vi.mock("@/lib/storage", () => ({
+  deleteFileFromB2: vi.fn().mockResolvedValue(true),
+}));
+
 const mockDbItem = {
   id: "item-123",
   title: "useAuth Hook",
@@ -339,7 +343,7 @@ describe("Item Database Queries", () => {
       expect(res).toBe(false);
       expect(prisma.item.findFirst).toHaveBeenCalledWith({
         where: { id: "non-existent-item", userId: "user-123" },
-        select: { id: true },
+        select: { id: true, storageKey: true },
       });
       expect(prisma.item.delete).not.toHaveBeenCalled();
     });
@@ -347,6 +351,7 @@ describe("Item Database Queries", () => {
     it("deletes the item and returns true when item exists and belongs to user", async () => {
       vi.mocked(prisma.item.findFirst).mockResolvedValue({
         id: "item-123",
+        storageKey: null,
       } as unknown as Awaited<ReturnType<typeof prisma.item.findFirst>>);
       vi.mocked(prisma.item.delete).mockResolvedValue({
         id: "item-123",
@@ -357,11 +362,27 @@ describe("Item Database Queries", () => {
       expect(res).toBe(true);
       expect(prisma.item.findFirst).toHaveBeenCalledWith({
         where: { id: "item-123", userId: "user-123" },
-        select: { id: true },
+        select: { id: true, storageKey: true },
       });
       expect(prisma.item.delete).toHaveBeenCalledWith({
         where: { id: "item-123" },
       });
+    });
+
+    it("cleans up file from B2 storage when deleted item has a storageKey", async () => {
+      const { deleteFileFromB2 } = await import("@/lib/storage");
+      vi.mocked(prisma.item.findFirst).mockResolvedValue({
+        id: "item-file-123",
+        storageKey: "uploads/user-123/architecture.pdf",
+      } as unknown as Awaited<ReturnType<typeof prisma.item.findFirst>>);
+      vi.mocked(prisma.item.delete).mockResolvedValue({
+        id: "item-file-123",
+      } as unknown as Awaited<ReturnType<typeof prisma.item.delete>>);
+
+      const res = await deleteItem("item-file-123", "user-123");
+
+      expect(res).toBe(true);
+      expect(deleteFileFromB2).toHaveBeenCalledWith("uploads/user-123/architecture.pdf");
     });
   });
 
@@ -429,7 +450,7 @@ describe("Item Database Queries", () => {
       });
 
       expect(mockTx.item.create).toHaveBeenCalledWith({
-        data: {
+        data: expect.objectContaining({
           title: "New Snippet",
           description: null,
           contentType: "TEXT",
@@ -438,7 +459,7 @@ describe("Item Database Queries", () => {
           language: "typescript",
           userId: "user-123",
           itemTypeId: "type-snippet-id",
-        },
+        }),
       });
 
       expect(mockTx.tag.upsert).toHaveBeenCalledWith({
@@ -494,7 +515,7 @@ describe("Item Database Queries", () => {
       });
 
       expect(mockTx.item.create).toHaveBeenCalledWith({
-        data: {
+        data: expect.objectContaining({
           title: "DevStash Documentation",
           description: null,
           contentType: "URL",
@@ -503,11 +524,61 @@ describe("Item Database Queries", () => {
           language: null,
           userId: "user-123",
           itemTypeId: "type-link-id",
-        },
+        }),
       });
 
       expect(res).not.toBeNull();
       expect(res?.id).toBe("created-link-123");
+    });
+
+    it("creates a file item with FILE contentType and file metadata", async () => {
+      vi.mocked(prisma.itemType.findFirst).mockResolvedValue({
+        id: "type-file-id",
+        name: "file",
+        icon: "File",
+        color: "#6b7280",
+      } as unknown as Awaited<ReturnType<typeof prisma.itemType.findFirst>>);
+
+      mockTx.item.create.mockResolvedValue({
+        id: "created-file-123",
+      });
+
+      mockTx.item.findUnique.mockResolvedValue({
+        ...mockDbItem,
+        id: "created-file-123",
+        title: "Docker Compose YAML",
+        contentType: "FILE",
+        fileName: "docker-compose.yml",
+        fileSize: BigInt(2048),
+        mimeType: "text/yaml",
+        storageKey: "uploads/user-123/docker-compose.yml",
+        tags: [],
+      });
+
+      const res = await createItem("user-123", {
+        type: "file",
+        title: "Docker Compose YAML",
+        fileName: "docker-compose.yml",
+        fileSize: 2048,
+        mimeType: "text/yaml",
+        storageKey: "uploads/user-123/docker-compose.yml",
+        fileUrl: "/api/files/download?key=uploads/user-123/docker-compose.yml",
+      });
+
+      expect(mockTx.item.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          title: "Docker Compose YAML",
+          contentType: "FILE",
+          fileName: "docker-compose.yml",
+          fileSize: BigInt(2048),
+          mimeType: "text/yaml",
+          storageKey: "uploads/user-123/docker-compose.yml",
+          itemTypeId: "type-file-id",
+        }),
+      });
+
+      expect(res).not.toBeNull();
+      expect(res?.fileName).toBe("docker-compose.yml");
     });
   });
 });

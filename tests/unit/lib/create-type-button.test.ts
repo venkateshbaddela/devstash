@@ -20,6 +20,8 @@ describe("CreateTypeItemButton Configuration & Mapping", () => {
     expect(TYPE_SINGULAR_LABELS["command"]).toBe("Command");
     expect(TYPE_SINGULAR_LABELS["note"]).toBe("Note");
     expect(TYPE_SINGULAR_LABELS["link"]).toBe("Link");
+    expect(TYPE_SINGULAR_LABELS["file"]).toBe("File");
+    expect(TYPE_SINGULAR_LABELS["image"]).toBe("Image");
   });
 
   it("normalizes plural and mixed-case type slugs to valid CreationItemType", () => {
@@ -35,6 +37,10 @@ describe("CreateTypeItemButton Configuration & Mapping", () => {
       { input: "notes", expected: "note" },
       { input: "link", expected: "link" },
       { input: "links", expected: "link" },
+      { input: "file", expected: "file" },
+      { input: "files", expected: "file" },
+      { input: "image", expected: "image" },
+      { input: "images", expected: "image" },
     ];
 
     for (const { input, expected } of testCases) {
@@ -47,8 +53,8 @@ describe("CreateTypeItemButton Configuration & Mapping", () => {
     }
   });
 
-  it("identifies non-creatable Pro/system types", () => {
-    const nonCreatable = ["file", "files", "image", "images", "unknown"];
+  it("identifies non-creatable types", () => {
+    const nonCreatable = ["collection", "collections", "dashboard", "unknown", "item"];
     for (const slug of nonCreatable) {
       const normalized = slug.toLowerCase().trim().replace(/s$/, "");
       const isCreatable = CREATION_ITEM_TYPES.includes(

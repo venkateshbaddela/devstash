@@ -82,6 +82,8 @@ export const CREATION_ITEM_TYPES = [
   "command",
   "note",
   "link",
+  "file",
+  "image",
 ] as const;
 
 export type CreationItemType = (typeof CREATION_ITEM_TYPES)[number];
@@ -92,6 +94,8 @@ export const TYPE_SINGULAR_LABELS: Record<CreationItemType, string> = {
   command: "Command",
   note: "Note",
   link: "Link",
+  file: "File",
+  image: "Image",
 };
 
 /**
@@ -109,7 +113,7 @@ export const createItemSchema = z
           CREATION_ITEM_TYPES.includes(val as CreationItemType),
         {
           message:
-            "Invalid item type. Must be snippet, prompt, command, note, or link.",
+            "Invalid item type. Must be snippet, prompt, command, note, link, file, or image.",
         }
       ),
     title: z
@@ -156,6 +160,34 @@ export const createItemSchema = z
         const trimmed = val.trim();
         return trimmed.length > 0 ? trimmed : null;
       }),
+    fileUrl: z
+      .string()
+      .trim()
+      .nullable()
+      .optional()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
+    fileName: z
+      .string()
+      .trim()
+      .nullable()
+      .optional()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
+    fileSize: z
+      .union([z.number(), z.bigint()])
+      .nullable()
+      .optional(),
+    mimeType: z
+      .string()
+      .trim()
+      .nullable()
+      .optional()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
+    storageKey: z
+      .string()
+      .trim()
+      .nullable()
+      .optional()
+      .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
     tags: z
       .array(
         z
@@ -197,6 +229,16 @@ export const createItemSchema = z
             path: ["url"],
           });
         }
+      }
+    }
+
+    if (data.type === "file" || data.type === "image") {
+      if (!data.storageKey && !data.fileUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Please upload a ${data.type} before saving.`,
+          path: ["storageKey"],
+        });
       }
     }
   });

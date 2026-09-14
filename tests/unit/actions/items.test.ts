@@ -422,6 +422,48 @@ describe("Items Server Actions & Validation", () => {
       }
     });
 
+    it("validates file and image creation with storageKey and metadata", () => {
+      const fileResult = createItemSchema.safeParse({
+        type: "file",
+        title: "Architecture Spec PDF",
+        storageKey: "uploads/user-1/spec.pdf",
+        fileUrl: "/api/files/download?key=uploads/user-1/spec.pdf",
+        fileName: "spec.pdf",
+        fileSize: 1048576,
+        mimeType: "application/pdf",
+      });
+
+      expect(fileResult.success).toBe(true);
+      if (fileResult.success) {
+        expect(fileResult.data.storageKey).toBe("uploads/user-1/spec.pdf");
+        expect(fileResult.data.fileName).toBe("spec.pdf");
+        expect(fileResult.data.fileSize).toBe(1048576);
+      }
+
+      const imageResult = createItemSchema.safeParse({
+        type: "image",
+        title: "System Diagram PNG",
+        storageKey: "uploads/user-1/diagram.png",
+        fileName: "diagram.png",
+        fileSize: 524288,
+        mimeType: "image/png",
+      });
+
+      expect(imageResult.success).toBe(true);
+    });
+
+    it("fails when file or image type is missing both storageKey and fileUrl", () => {
+      const result = createItemSchema.safeParse({
+        type: "file",
+        title: "Missing File Attachment",
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.message).toContain("Please upload a file before saving");
+      }
+    });
+
     it("fails when title is empty", () => {
       const result = createItemSchema.safeParse({
         type: "note",
@@ -477,7 +519,7 @@ describe("Items Server Actions & Validation", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(createItemDb).toHaveBeenCalledWith("auth-user-999", {
+      expect(createItemDb).toHaveBeenCalledWith("auth-user-999", expect.objectContaining({
         type: "snippet",
         title: "Test Snippet",
         description: null,
@@ -486,7 +528,7 @@ describe("Items Server Actions & Validation", () => {
         language: "typescript",
         tags: ["react"],
         collectionId: null,
-      });
+      }));
     });
 
     it("falls back to default demo user ID when unauthenticated", async () => {
@@ -556,6 +598,60 @@ describe("Items Server Actions & Validation", () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockUpdatedItem);
+    });
+
+    it("successfully creates file item and passes storage parameters to createItemDb", async () => {
+      mockAuth.mockResolvedValue(createMockSession("user-123"));
+      vi.mocked(createItemDb).mockResolvedValue(mockUpdatedItem);
+
+      const result = await createItemAction({
+        type: "file",
+        title: "Docker Compose YAML",
+        fileName: "docker-compose.yml",
+        fileSize: 2048,
+        mimeType: "text/yaml",
+        storageKey: "uploads/user-123/docker-compose.yml",
+        fileUrl: "/api/files/download?key=uploads/user-123/docker-compose.yml",
+      });
+
+      expect(result.success).toBe(true);
+      expect(createItemDb).toHaveBeenCalledWith("user-123", {
+        type: "file",
+        title: "Docker Compose YAML",
+        description: null,
+        content: null,
+        url: null,
+        language: null,
+        fileName: "docker-compose.yml",
+        fileSize: 2048,
+        mimeType: "text/yaml",
+        storageKey: "uploads/user-123/docker-compose.yml",
+        fileUrl: "/api/files/download?key=uploads/user-123/docker-compose.yml",
+        tags: [],
+        collectionId: null,
+      });
+    });
+
+    it("successfully creates image item and passes storage parameters to createItemDb", async () => {
+      mockAuth.mockResolvedValue(createMockSession("user-123"));
+      vi.mocked(createItemDb).mockResolvedValue(mockUpdatedItem);
+
+      const result = await createItemAction({
+        type: "image",
+        title: "Dashboard Screenshot",
+        fileName: "screenshot.webp",
+        fileSize: 104857,
+        mimeType: "image/webp",
+        storageKey: "uploads/user-123/screenshot.webp",
+      });
+
+      expect(result.success).toBe(true);
+      expect(createItemDb).toHaveBeenCalledWith("user-123", expect.objectContaining({
+        type: "image",
+        title: "Dashboard Screenshot",
+        fileName: "screenshot.webp",
+        storageKey: "uploads/user-123/screenshot.webp",
+      }));
     });
   });
 });

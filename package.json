@@ -24,6 +24,7 @@
     "test:edit": "tsx scripts/test-item-edit.ts",
     "test:delete": "tsx scripts/test-item-delete.ts",
     "test:create": "tsx scripts/test-item-create.ts",
+    "test:files": "tsx scripts/test-file-upload.ts",
     "studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -31,6 +32,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
+    "@aws-sdk/client-s3": "^3.1131.0",
     "@base-ui/react": "^1.8.0",
     "@monaco-editor/react": "^4.7.0",
     "@prisma/adapter-pg": "^7.10.0",

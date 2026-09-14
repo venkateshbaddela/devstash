@@ -1,22 +1,43 @@
-# Current Feature
+# Current Feature: File Upload with Backblaze B2
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Create upload API route for Backblaze B2 storage
+- Keep all Prisma database operations within `src/lib/db/items.ts`
+- Create `FileUpload` component with drag-and-drop support and upload progress indicator
+- Update `CreateItemDialog` modal to use `FileUpload` for `file` and `image` item types
+- Display image preview for images and file info (name, size, MIME type) for files
+- Delete files from Backblaze B2 storage when items are deleted
+- Create download proxy API route to avoid CORS issues
+- Add download button in `ItemDrawer` for file types
+- Enforce file constraints and MIME type validation (Images: $\le$ 5 MB, Files: $\le$ 10 MB)
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- **Overview:** Add file and image upload functionality using Backblaze B2 storage.
+- **Database Functions:** Strictly stick to `src/lib/db/items.ts` for all Prisma/DB functions.
+- **File Constraints:**
+  - **Images:** Max size 5 MB. Allowed extensions: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`
+  - **Files:** Max size 10 MB. Allowed extensions: `.pdf`, `.txt`, `.md`, `.json`, `.yaml`, `.yml`, `.xml`, `.csv`, `.toml`, `.ini`
+- **MIME Types:**
+  - **Images:** `image/png`, `image/jpeg`, `image/gif`, `image/webp`, `image/svg+xml`
+  - **Files:** `application/pdf`, `text/plain`, `text/markdown`, `application/json`, `application/x-yaml`, `text/yaml`, `application/xml`, `text/xml`, `text/csv`, `application/toml`, `text/plain` (for `.ini`)
+- **UX & Safety:**
+  - Drag-and-drop file upload with progress indicator.
+  - Image preview for images, file info display for files.
+  - Download proxy API route to bypass CORS issues when retrieving files.
+  - Download button in `ItemDrawer` for file types.
+  - B2 file cleanup on item deletion to avoid orphaned storage objects.
 
 ---
 
@@ -340,4 +361,18 @@ Not Started
   - `ItemDrawer` (`src/components/items/item-drawer.tsx`): renders `MarkdownEditor` in readonly mode for view mode and interactive Write/Preview tabs in edit mode for `note` and `prompt`.
   - Preserved `CodeEditor` unchanged for `snippet` and `command`.
 - Verified 100% passing across Vitest unit tests (150/150 passed), database integration suites (`test:create`, `test:edit`, `test:drawer`), ESLint (`npm run lint`), and Next.js production build (`npm run build`).
+
+### Dual Affordance Empty Dropzone for Files & Images (2026-09-14)
+
+- Designed and implemented `FileImageEmptyDropzone` (`src/components/items/file-image-empty-dropzone.tsx`) for `file` and `image` item types on `/items/[type]` route when no items exist.
+- Implemented dual affordance pattern combining:
+  - Drag-and-drop target with dynamic color glow and drag-enter visual feedback (`UploadCloud` icon, `scale-[0.995]`, type border color).
+  - Native file picker trigger via "browse from device" link or card click.
+  - Primary button (`Create your first Image` / `Create your first File`) for direct manual creation dialog opening.
+  - Client-side pre-validation using `validateFileConstraints` displaying dismissible error banners on constraint violations (size limits, disallowed extensions).
+  - Constraint summary footer (`Supports PNG, JPG... up to 5 MB` / `Supports PDF, TXT... up to 10 MB`).
+- Updated `CreateItemDialog` (`src/components/items/create-item-dialog.tsx`) and `FileUpload` (`src/components/items/file-upload.tsx`) to accept `initialFile?: File | null`, pre-filling item title from filename and triggering automatic upload with progress feedback upon drop or file selection.
+- Preserved standard text empty state for text-based types (`snippet`, `prompt`, `command`, `note`, `link`).
+- Verified 100% passing across Vitest unit tests (183/183 passed), items integration suite (`test:items` - 47/47 passed), ESLint (`npm run lint`), and Next.js production build (`npm run build`).
+
 

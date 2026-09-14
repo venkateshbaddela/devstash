@@ -8,6 +8,8 @@ import {
   Terminal,
   StickyNote,
   Link as LinkIcon,
+  FileText,
+  Image as ImageIcon,
   Loader2,
   AlertCircle,
   Plus,
@@ -43,12 +45,14 @@ import { cn } from "cn";
 import { CodeEditor } from "@/components/ui/code-editor";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { isMarkdownItemType, isCodeItemType } from "@/lib/markdown";
+import { FileUpload, type UploadedFileData } from "@/components/items/file-upload";
 import type { ItemDetail } from "@/lib/db/items";
 
 interface CreateItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultType?: CreationItemType;
+  initialFile?: File | null;
   onSuccess?: (item: ItemDetail) => void;
 }
 
@@ -97,12 +101,27 @@ const TYPE_CONFIG: Record<
     description: "Bookmarks, references, or documentation links",
     contentPlaceholder: "",
   },
+  file: {
+    name: "File",
+    icon: FileText,
+    color: "#6b7280",
+    description: "Documents, configuration files, and data attachments",
+    contentPlaceholder: "",
+  },
+  image: {
+    name: "Image",
+    icon: ImageIcon,
+    color: "#ec4899",
+    description: "Screenshots, architecture diagrams, and image references",
+    contentPlaceholder: "",
+  },
 };
 
 export function CreateItemDialog({
   open,
   onOpenChange,
   defaultType = "snippet",
+  initialFile = null,
   onSuccess,
 }: CreateItemDialogProps) {
   const router = useRouter();
@@ -116,6 +135,7 @@ export function CreateItemDialog({
   const [url, setUrl] = React.useState("");
   const [language, setLanguage] = React.useState("");
   const [tagsInput, setTagsInput] = React.useState("");
+  const [uploadedFile, setUploadedFile] = React.useState<UploadedFileData | null>(null);
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -127,6 +147,7 @@ export function CreateItemDialog({
     setUrl("");
     setLanguage("");
     setTagsInput("");
+    setUploadedFile(null);
     setError(null);
     setIsSubmitting(false);
   }, []);
@@ -139,6 +160,9 @@ export function CreateItemDialog({
     if (open) {
       setSelectedType(defaultType);
       resetForm();
+      if (initialFile) {
+        setTitle(initialFile.name);
+      }
     }
   }
 
@@ -151,12 +175,21 @@ export function CreateItemDialog({
 
   const activeConfig = TYPE_CONFIG[selectedType];
   const isLink = selectedType === "link";
+  const isFileOrImage = selectedType === "file" || selectedType === "image";
   const isCodeOrCommand = isCodeItemType(selectedType);
   const isMarkdownType = isMarkdownItemType(selectedType);
 
+  const handleUploadedFileChange = (file: UploadedFileData | null) => {
+    setUploadedFile(file);
+    if (file && !title.trim()) {
+      setTitle(file.fileName);
+    }
+  };
+
   const isFormValid =
     title.trim().length > 0 &&
-    (!isLink || (url.trim().length > 0 && (url.startsWith("http://") || url.startsWith("https://"))));
+    (!isLink || (url.trim().length > 0 && (url.startsWith("http://") || url.startsWith("https://")))) &&
+    (!isFileOrImage || uploadedFile !== null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,9 +212,14 @@ export function CreateItemDialog({
         type: selectedType,
         title: title.trim(),
         description: description.trim() || null,
-        content: isLink ? null : (content.trim() || null),
+        content: isLink || isFileOrImage ? null : (content.trim() || null),
         url: isLink ? url.trim() : null,
         language: isCodeOrCommand ? (language.trim() || null) : null,
+        fileUrl: isFileOrImage ? uploadedFile?.fileUrl : null,
+        fileName: isFileOrImage ? uploadedFile?.fileName : null,
+        fileSize: isFileOrImage ? uploadedFile?.fileSize : null,
+        mimeType: isFileOrImage ? uploadedFile?.mimeType : null,
+        storageKey: isFileOrImage ? uploadedFile?.storageKey : null,
         tags: parsedTags,
       });
 
@@ -416,8 +454,25 @@ export function CreateItemDialog({
               </div>
             )}
 
-            {/* Content Field for Non-Link Types */}
-            {!isLink && (
+            {/* File / Image Upload Component */}
+            {isFileOrImage && (
+              <div>
+                <label className="text-xs font-medium text-foreground flex items-center justify-between mb-1.5">
+                  <span>{selectedType === "image" ? "Image File" : "Attachment File"}</span>
+                  <span className="text-destructive">*</span>
+                </label>
+                <FileUpload
+                  type={selectedType as "file" | "image"}
+                  value={uploadedFile}
+                  onChange={handleUploadedFileChange}
+                  disabled={isSubmitting}
+                  initialFile={initialFile}
+                />
+              </div>
+            )}
+
+            {/* Content Field for Text Types */}
+            {!isLink && !isFileOrImage && (
               <div>
                 <label
                   htmlFor="item-content"

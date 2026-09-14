@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { getDefaultUserId } from "@/lib/db/collections";
+import { deleteFileFromB2 } from "@/lib/storage";
 
 export interface DashboardItem {
   id: string;
@@ -374,6 +375,7 @@ export interface ItemDetail {
   fileName: string | null;
   fileSize: number | null;
   mimeType: string | null;
+  storageKey?: string | null;
   isFavorite: boolean;
   isPinned: boolean;
   type: string;
@@ -413,6 +415,7 @@ function mapToItemDetail(item: {
   fileName: string | null;
   fileSize: bigint | null;
   mimeType: string | null;
+  storageKey?: string | null;
   isFavorite: boolean;
   isPinned: boolean;
   createdAt: Date;
@@ -446,6 +449,7 @@ function mapToItemDetail(item: {
     fileName: item.fileName,
     fileSize: item.fileSize ? Number(item.fileSize) : null,
     mimeType: item.mimeType,
+    storageKey: item.storageKey ?? null,
     isFavorite: item.isFavorite,
     isPinned: item.isPinned,
     type: item.itemType.name,
@@ -641,6 +645,7 @@ export async function updateItem(
 /**
  * Deletes an item belonging to the specified user.
  * Returns true if successfully deleted, false if not found or unauthorized.
+ * Also cleans up attached file from Backblaze B2 storage if present.
  */
 export async function deleteItem(
   itemId: string,
@@ -655,7 +660,7 @@ export async function deleteItem(
 
   const existing = await prisma.item.findFirst({
     where: { id: cleanItemId, userId: targetUserId },
-    select: { id: true },
+    select: { id: true, storageKey: true },
   });
 
   if (!existing) return false;
@@ -663,6 +668,14 @@ export async function deleteItem(
   await prisma.item.delete({
     where: { id: cleanItemId },
   });
+
+  if (existing.storageKey) {
+    try {
+      await deleteFileFromB2(existing.storageKey);
+    } catch (storageErr) {
+      console.warn("Failed to delete file from B2 storage:", storageErr);
+    }
+  }
 
   return true;
 }
@@ -674,6 +687,11 @@ export interface CreateItemData {
   content?: string | null;
   url?: string | null;
   language?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: number | bigint | null;
+  mimeType?: string | null;
+  storageKey?: string | null;
   tags?: string[];
   collectionId?: string | null;
 }
@@ -700,7 +718,8 @@ export async function createItem(
 
   if (!itemType) return null;
 
-  const contentType = typeLower === "link" ? "URL" : "TEXT";
+  const isFileType = typeLower === "file" || typeLower === "image";
+  const contentType = isFileType ? "FILE" : typeLower === "link" ? "URL" : "TEXT";
 
   return await prisma.$transaction(
     async (tx) => {
@@ -712,6 +731,14 @@ export async function createItem(
           content: data.content !== undefined ? data.content : null,
           url: data.url?.trim() || null,
           language: data.language?.trim() || null,
+          fileUrl: data.fileUrl?.trim() || null,
+          fileName: data.fileName?.trim() || null,
+          fileSize:
+            data.fileSize !== undefined && data.fileSize !== null
+              ? BigInt(data.fileSize)
+              : null,
+          mimeType: data.mimeType?.trim() || null,
+          storageKey: data.storageKey?.trim() || null,
           userId: targetUserId,
           itemTypeId: itemType.id,
           ...(data.collectionId
