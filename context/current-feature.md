@@ -1,33 +1,22 @@
-# Current Feature: Image Gallery View
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- Create a dedicated image thumbnail card component to replace the standard item card for image items
-- Display image thumbnails with 16:9 aspect ratio (`aspect-video`) using `object-cover`
-- Add subtle hover zoom effect (5% scale with 300ms transition)
-- Render clean 3-column image grid on larger screens matching Devstash layout
-- Include essential overlay or footer details (title, favorite/pin badges, tag pills)
-- Connect click interaction seamlessly to `ItemDrawer`
-- Enable full image modal viewer with zoom/actions when clicking the image preview in `ItemDrawer`
-- Maintain aesthetic, dark-mode native, high-polish UI/UX without over-engineering
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- Spec file: [image-display--spec.md](file:///workspaces/devstash/context/features/image-display--spec.md)
-- Target: `/items/images` route in `src/app/(app)/items/[type]/page.tsx`
-- Aspect ratio: `aspect-video` (16:9) with `object-cover` to fill cards
-- Hover animation: `hover:scale-105 transition-transform duration-300`
-- Keep implementation clean and avoid over-engineering
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -363,7 +352,11 @@ In Progress
 - Enhanced `ItemDrawer` (`src/components/items/item-drawer.tsx`) with image preview rendering and direct file download action button proxying through `/api/files/download`.
 - Designed and implemented clean `FileImageEmptyDropzone` (`src/components/items/file-image-empty-dropzone.tsx`) for `/items/files` and `/items/images` empty states, providing drag-and-drop auto-staging and a clear single "Create your first..." button, while hiding the top header button until the first item is added.
 - Added comprehensive unit test suites covering storage service, file constraints validation, and upload API route handlers (183/183 passing unit tests).
-- Verified cleanly against ESLint (`npm run lint`), item list view integration tests (`test:items` - 47/47 passed), and Next.js production build (`npm run build`).
 
+### Image Gallery View (2026-09-14)
 
-
+- Created dedicated `ImageCard` component (`src/components/items/image-card.tsx` and re-export in `src/components/dashboard/image-card.tsx`) featuring 16:9 thumbnail ratio (`aspect-video`), `object-cover`, subtle 5% hover zoom transition (`duration-300`), pin/star badges overlay, title, description, and tag pills.
+- Updated `/items/[type]` route (`src/app/(app)/items/[type]/page.tsx`) to render a responsive 3-column grid (`grid-cols-1 sm:grid-cols-2 md:grid-cols-3`) when viewing image items, seamlessly opening `ItemDrawer` on click.
+- Extended `DASHBOARD_ITEM_SELECT` and `DashboardItem` in `src/lib/db/items.ts` to query `fileUrl`, `fileName`, `fileSize`, and `mimeType` for lightweight, immediate thumbnail rendering without secondary queries.
+- Enhanced `ItemDrawer` (`src/components/items/item-drawer.tsx`) with click-to-expand hover overlay, "View Full" action button, and full image `Dialog` modal (`max-h-[72vh] object-contain`, header metadata, download, and open-in-new-tab actions).
+- Verified 100% passing across Vitest unit tests (183/183 passed), item list integration tests (`test:items` - 47/47 passed), ESLint (`npm run lint`), and Next.js production build (`npm run build`).
