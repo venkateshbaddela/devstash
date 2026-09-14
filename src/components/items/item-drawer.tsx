@@ -66,10 +66,10 @@ export function ItemDrawer() {
   const router = useRouter();
 
   const [copied, setCopied] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [activeImageModalId, setActiveImageModalId] = useState<string | null>(null);
 
   // Form states for edit mode
   const [title, setTitle] = useState("");
@@ -94,6 +94,10 @@ export function ItemDrawer() {
   const displayTags = item?.tags ?? previewItem?.tags ?? [];
   const displayId = item?.id ?? previewItem?.id ?? "";
   const displayLanguage = item?.language ?? previewItem?.language ?? null;
+
+  // Derived states: automatically reset when a different item is selected without effects or render-phase mutations
+  const isEditing = editingItemId === displayId && !!displayId;
+  const isImageModalOpen = activeImageModalId === displayId && !!displayId;
   const activeLanguage = isEditing ? (language.trim() || null) : displayLanguage;
 
   const lowerType = displayType.toLowerCase();
@@ -101,18 +105,10 @@ export function ItemDrawer() {
   const showLanguageField = ["snippet", "command"].includes(lowerType);
   const showUrlField = ["link"].includes(lowerType);
 
-  const [prevDisplayId, setPrevDisplayId] = useState(displayId);
-  if (displayId !== prevDisplayId) {
-    setPrevDisplayId(displayId);
-    setIsEditing(false);
-    setIsImageModalOpen(false);
-  }
-
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setIsEditing(false);
-      setIsImageModalOpen(false);
-      setToast(null);
+      setEditingItemId(null);
+      setActiveImageModalId(null);
       closeDrawer();
     }
   };
@@ -125,11 +121,11 @@ export function ItemDrawer() {
     setLanguage(item.language || "");
     setUrl(item.url || "");
     setTagsInput(item.tags && item.tags.length > 0 ? item.tags.join(", ") : "");
-    setIsEditing(true);
+    setEditingItemId(displayId);
   };
 
   const handleCancel = () => {
-    setIsEditing(false);
+    setEditingItemId(null);
     if (item) {
       setTitle(item.title || "");
       setDescription(item.description || "");
@@ -167,7 +163,7 @@ export function ItemDrawer() {
 
       if (res.success && res.data) {
         setItemDetail(res.data);
-        setIsEditing(false);
+        setEditingItemId(null);
         showToast("success", res.message || "Item updated successfully.");
         router.refresh();
       } else {
@@ -807,11 +803,11 @@ export function ItemDrawer() {
                       <div
                         role="button"
                         tabIndex={0}
-                        onClick={() => setIsImageModalOpen(true)}
+                        onClick={() => setActiveImageModalId(displayId)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            setIsImageModalOpen(true);
+                            setActiveImageModalId(displayId);
                           }
                         }}
                         className="group/img relative rounded-lg overflow-hidden border border-border/60 bg-zinc-900/90 flex items-center justify-center min-h-[180px] max-h-[420px] cursor-zoom-in transition-all hover:border-border select-none"
@@ -851,7 +847,7 @@ export function ItemDrawer() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setIsImageModalOpen(true)}
+                            onClick={() => setActiveImageModalId(displayId)}
                             className="h-8 px-3 gap-1.5 text-xs font-medium cursor-pointer"
                           >
                             <Maximize2 className="size-3.5" />
@@ -1037,7 +1033,7 @@ export function ItemDrawer() {
         item={{ id: displayId, title: displayTitle }}
         onSuccess={() => {
           closeDrawer();
-          showGlobalToast("success", "Item deleted successfully.");
+          showToast("success", "Item deleted successfully.");
           router.refresh();
         }}
       />
@@ -1045,7 +1041,10 @@ export function ItemDrawer() {
 
     {/* Full Image Modal */}
     {item && (lowerType === "image" || item?.mimeType?.startsWith("image/")) && (item.fileUrl || item.storageKey) && (
-      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+      <Dialog
+        open={isImageModalOpen}
+        onOpenChange={(open) => setActiveImageModalId(open ? displayId : null)}
+      >
         <DialogContent
           className="w-[95vw] sm:w-[90vw] md:max-w-5xl max-h-[92vh] p-0 overflow-hidden border-border/80 bg-zinc-950/95 backdrop-blur-xl shadow-2xl flex flex-col gap-0 z-[60]"
           showCloseButton={true}
