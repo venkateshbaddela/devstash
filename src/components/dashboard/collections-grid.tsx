@@ -1,38 +1,10 @@
 import Link from "next/link";
-import {
-  Code,
-  Sparkles,
-  Terminal,
-  StickyNote,
-  File,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  Star,
-  MoreHorizontal,
-  type LucideIcon,
-} from "lucide-react";
+import { Star, MoreHorizontal } from "lucide-react";
 import {
   getDashboardCollections,
   type DashboardCollection,
 } from "@/lib/db/collections";
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  Code,
-  Sparkles,
-  Terminal,
-  StickyNote,
-  File,
-  Image: ImageIcon,
-  Link: LinkIcon,
-  // System item type name mappings
-  snippet: Code,
-  prompt: Sparkles,
-  command: Terminal,
-  note: StickyNote,
-  file: File,
-  image: ImageIcon,
-  link: LinkIcon,
-};
+import { ItemTypeIcon } from "@/lib/icons";
 
 interface CollectionsGridProps {
   collections?: DashboardCollection[];
@@ -107,19 +79,14 @@ export async function CollectionsGrid({
 
               {/* Small icons of all types in this collection */}
               <div className="flex items-center gap-2 pt-3.5 mt-2 min-h-[1.875rem]">
-                {col.types.map((typeInfo) => {
-                  const IconComponent =
-                    ICON_MAP[typeInfo.icon] || ICON_MAP[typeInfo.name] || File;
-
-                  return (
-                    <IconComponent
-                      key={typeInfo.name}
-                      className="size-3.5 shrink-0"
-                      style={{ color: typeInfo.color }}
-                      aria-label={`${typeInfo.name} (${typeInfo.count})`}
-                    />
-                  );
-                })}
+                {col.types.map((typeInfo) => (
+                  <ItemTypeIcon
+                    key={typeInfo.name}
+                    name={typeInfo.icon || typeInfo.name}
+                    className="size-3.5 shrink-0"
+                    style={{ color: typeInfo.color }}
+                  />
+                ))}
               </div>
             </div>
           ))}
