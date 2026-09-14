@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { getDefaultUserId } from "@/lib/db/collections";
 import { validateFileConstraints } from "@/lib/file-constraints";
 import { uploadFileToB2 } from "@/lib/storage";
+import { getClientIp, checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import crypto from "node:crypto";
 
 export async function POST(req: NextRequest) {
@@ -20,6 +21,12 @@ export async function POST(req: NextRequest) {
         { error: "Unauthorized. You must be signed in to upload files." },
         { status: 401 }
       );
+    }
+
+    const clientIp = await getClientIp(req);
+    const rateLimit = await checkRateLimit("upload", `${userId}:${clientIp}`);
+    if (!rateLimit.success) {
+      return rateLimitResponse(rateLimit);
     }
 
     const formData = await req.formData();

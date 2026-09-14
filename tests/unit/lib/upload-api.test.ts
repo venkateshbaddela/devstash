@@ -6,6 +6,7 @@ import { GET as downloadGet } from "@/app/api/files/download/route";
 import { auth } from "@/auth";
 import { getDefaultUserId } from "@/lib/db/collections";
 import { uploadFileToB2, getFileFromB2 } from "@/lib/storage";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 vi.mock("@/auth", () => ({
   auth: vi.fn(),
@@ -19,6 +20,21 @@ vi.mock("@/lib/storage", () => ({
   uploadFileToB2: vi.fn().mockResolvedValue({ key: "uploads/user/test.pdf", success: true }),
   getFileFromB2: vi.fn(),
 }));
+
+vi.mock("@/lib/rate-limit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/rate-limit")>();
+  return {
+    ...actual,
+    getClientIp: vi.fn().mockResolvedValue("127.0.0.1"),
+    checkRateLimit: vi.fn().mockResolvedValue({
+      success: true,
+      limit: 20,
+      remaining: 20,
+      reset: Date.now() + 60000,
+      retryAfterSeconds: 0,
+    }),
+  };
+});
 
 const mockAuth = auth as unknown as Mock<() => Promise<Session | null>>;
 
@@ -77,6 +93,33 @@ describe("File Upload & Download API Routes", () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.error).toContain("exceeds the maximum allowed limit of 5 MB");
+    });
+
+    it("returns 429 when upload rate limit is exceeded", async () => {
+      vi.mocked(checkRateLimit).mockResolvedValueOnce({
+        success: false,
+        limit: 20,
+        remaining: 0,
+        reset: Date.now() + 60000,
+        retryAfterSeconds: 60,
+        errorMessage: "Too many attempts. Please try again in 1 minute.",
+      });
+
+      const formData = new FormData();
+      const validBlob = new Blob([new Uint8Array(100)], { type: "image/png" });
+      formData.append("file", validBlob, "test.png");
+      formData.append("type", "image");
+
+      const req = new NextRequest("http://localhost:3000/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const res = await uploadPost(req);
+      expect(res.status).toBe(429);
+      expect(res.headers.get("Retry-After")).toBe("60");
+      const json = await res.json();
+      expect(json.error).toContain("Too many attempts");
     });
 
     it("returns 200 and upload metadata on valid file upload", async () => {

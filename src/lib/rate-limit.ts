@@ -8,7 +8,8 @@ export type RateLimitAction =
   | "register"
   | "forgot-password"
   | "reset-password"
-  | "resend-verification";
+  | "resend-verification"
+  | "upload";
 
 export interface RateLimitResult {
   success: boolean;
@@ -38,6 +39,7 @@ const redis =
 // - forgot-password: 3 attempts / 1 hour
 // - reset-password: 5 attempts / 15 min
 // - resend-verification: 3 attempts / 15 min
+// - upload: 20 uploads / 10 min
 const limiters: Record<RateLimitAction, Ratelimit | null> = {
   login: redis
     ? new Ratelimit({
@@ -89,6 +91,15 @@ const limiters: Record<RateLimitAction, Ratelimit | null> = {
         redis,
         limiter: Ratelimit.slidingWindow(3, "15 m"),
         prefix: "ratelimit:auth:resend-verification",
+        analytics: true,
+        timeout: 1500,
+      })
+    : null,
+  upload: redis
+    ? new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(20, "10 m"),
+        prefix: "ratelimit:api:upload",
         analytics: true,
         timeout: 1500,
       })
