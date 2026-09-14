@@ -7,9 +7,18 @@ import { auth } from "@/auth";
 import { getDefaultUserId } from "@/lib/db/collections";
 import { uploadFileToB2, getFileFromB2 } from "@/lib/storage";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { prisma } from "@/lib/prisma";
 
 vi.mock("@/auth", () => ({
   auth: vi.fn(),
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    item: {
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
+  },
 }));
 
 vi.mock("@/lib/db/collections", () => ({
@@ -217,11 +226,50 @@ describe("File Upload & Download API Routes", () => {
       expect(json.error).toContain("File key is required");
     });
 
+    it("returns 400 when storage key contains directory traversal or invalid format", async () => {
+      const req = new NextRequest(
+        "http://localhost:3000/api/files/download?key=uploads/../etc/passwd"
+      );
+      const res = await downloadGet(req);
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error).toContain("Invalid file key format");
+    });
+
+    it("returns 403 Forbidden when accessing another user's file prefix without item ownership", async () => {
+      vi.mocked(prisma.item.findFirst).mockResolvedValue(null);
+
+      const req = new NextRequest(
+        "http://localhost:3000/api/files/download?key=uploads/victim-user-999/secret.pdf"
+      );
+      const res = await downloadGet(req);
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error).toContain("Forbidden");
+    });
+
+    it("returns 200 when accessing file with different prefix if user owns the Item in database", async () => {
+      vi.mocked(prisma.item.findFirst).mockResolvedValue({ id: "item-owned-1" } as unknown as { id: string } as never);
+      const testBuffer = Buffer.from("pdf-data-bytes");
+      vi.mocked(getFileFromB2).mockResolvedValue({
+        buffer: testBuffer,
+        contentType: "application/pdf",
+        contentLength: testBuffer.length,
+      });
+
+      const req = new NextRequest(
+        "http://localhost:3000/api/files/download?key=uploads/legacy-prefix/doc.pdf&filename=doc.pdf"
+      );
+      const res = await downloadGet(req);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Content-Type")).toBe("application/pdf");
+    });
+
     it("returns 404 when file is not found in storage", async () => {
       vi.mocked(getFileFromB2).mockResolvedValue(null);
 
       const req = new NextRequest(
-        "http://localhost:3000/api/files/download?key=uploads/user/missing.pdf"
+        "http://localhost:3000/api/files/download?key=uploads/user-123/missing.pdf"
       );
       const res = await downloadGet(req);
       expect(res.status).toBe(404);
@@ -238,7 +286,7 @@ describe("File Upload & Download API Routes", () => {
       });
 
       const req = new NextRequest(
-        "http://localhost:3000/api/files/download?key=uploads/user/spec.pdf&filename=spec.pdf"
+        "http://localhost:3000/api/files/download?key=uploads/user-123/spec.pdf&filename=spec.pdf"
       );
       const res = await downloadGet(req);
       expect(res.status).toBe(200);
@@ -264,7 +312,7 @@ describe("File Upload & Download API Routes", () => {
         });
 
         const req = new NextRequest(
-          `http://localhost:3000/api/files/download?key=uploads/user/test.${format.ext}&filename=test.${format.ext}&inline=true`
+          `http://localhost:3000/api/files/download?key=uploads/user-123/test.${format.ext}&filename=test.${format.ext}&inline=true`
         );
         const res = await downloadGet(req);
         expect(res.status).toBe(200);
@@ -283,7 +331,7 @@ describe("File Upload & Download API Routes", () => {
       });
 
       const req = new NextRequest(
-        "http://localhost:3000/api/files/download?key=uploads/user/vector.svg&filename=vector.svg&inline=true"
+        "http://localhost:3000/api/files/download?key=uploads/user-123/vector.svg&filename=vector.svg&inline=true"
       );
       const res = await downloadGet(req);
       expect(res.status).toBe(200);
@@ -304,7 +352,7 @@ describe("File Upload & Download API Routes", () => {
       });
 
       const req = new NextRequest(
-        "http://localhost:3000/api/files/download?key=uploads/user/vector.svg&filename=vector.svg"
+        "http://localhost:3000/api/files/download?key=uploads/user-123/vector.svg&filename=vector.svg"
       );
       const res = await downloadGet(req);
       expect(res.status).toBe(200);
@@ -325,7 +373,7 @@ describe("File Upload & Download API Routes", () => {
       });
 
       const req = new NextRequest(
-        "http://localhost:3000/api/files/download?key=uploads/user/logo.svg&filename=logo.svg&preview=true"
+        "http://localhost:3000/api/files/download?key=uploads/user-123/logo.svg&filename=logo.svg&preview=true"
       );
       const res = await downloadGet(req);
       expect(res.status).toBe(200);
@@ -352,7 +400,7 @@ describe("File Upload & Download API Routes", () => {
       });
 
       const req = new NextRequest(
-        "http://localhost:3000/api/files/download?key=uploads/user/corrupt.svg&filename=corrupt.svg&preview=true"
+        "http://localhost:3000/api/files/download?key=uploads/user-123/corrupt.svg&filename=corrupt.svg&preview=true"
       );
       const res = await downloadGet(req);
       expect(res.status).toBe(500);

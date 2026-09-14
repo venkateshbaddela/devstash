@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getDefaultUserId } from "@/lib/db/collections";
 import { getFileFromB2 } from "@/lib/storage";
+import { prisma } from "@/lib/prisma";
 import sharp from "sharp";
 
 export async function GET(req: NextRequest) {
@@ -21,6 +22,13 @@ export async function GET(req: NextRequest) {
 
     const cleanKey = key.trim();
 
+    if (cleanKey.includes("..") || cleanKey.startsWith("/") || cleanKey.startsWith("\\")) {
+      return NextResponse.json(
+        { error: "Invalid file key format." },
+        { status: 400 }
+      );
+    }
+
     // Authenticate user check (soft guard)
     let session = null;
     try {
@@ -35,6 +43,22 @@ export async function GET(req: NextRequest) {
         { error: "Unauthorized. Please sign in to access files." },
         { status: 401 }
       );
+    }
+
+    // Authorization check: Ensure user owns the requested file (IDOR prevention)
+    const isOwnPrefix = cleanKey.startsWith(`uploads/${userId}/`);
+    if (!isOwnPrefix) {
+      const ownedItem = await prisma.item.findFirst({
+        where: { storageKey: cleanKey, userId },
+        select: { id: true },
+      });
+
+      if (!ownedItem) {
+        return NextResponse.json(
+          { error: "Forbidden. You do not have permission to access this file." },
+          { status: 403 }
+        );
+      }
     }
 
     // Fetch file from Backblaze B2 (or dev storage fallback)
