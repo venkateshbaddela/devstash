@@ -1,28 +1,42 @@
-# Codebase Modularization & Decomposition
+# Current Feature: Implement Collection Creation
 
 ---
 
 ## Status
 
-Completed
+In Progress
 
 ---
 
 ## Goals
 
-1. **Task 1:** Break down `ItemDrawer` (`src/components/items/item-drawer.tsx` — 1,150 lines) into modular sub-components under `src/components/items/drawer/`.
-2. **Task 2:** Split database items operations (`src/lib/db/items.ts` — 861 lines) into read queries and transactional mutations (`items-mutations.ts`).
-3. **Task 3:** Modularize `CreateItemDialog` (`src/components/items/create-item-dialog.tsx` — 601 lines) by extracting `TYPE_CONFIG` and `ItemTypeSelector`.
-4. **Task 4:** Extract `markdownComponents` from `MarkdownEditor` (`src/components/ui/markdown-editor.tsx` — 438 lines) into reusable `markdown-components.tsx`.
-5. **Task 5:** Deduplicate authentication and demo-user safeguard boilerplate in Server Actions via a shared `requireAuthUser` guard.
-- Verify 100% passing unit tests (`npm test`), 0 ESLint errors (`npm run lint`), and clean production build (`npm run build`) after each step.
+1. **Database & Validation:**
+   - Define validation schema in `src/lib/validations/collections.ts` validating collection name (required, trimmed, max length) and optional description.
+   - Implement `createCollection` in `src/lib/db/collections.ts` to insert user-scoped collections using Prisma, returning the created collection entity.
+2. **Client API Route:**
+   - Create `POST /api/collections` route handler in `src/app/api/collections/route.ts` for client-side collection creation.
+   - Authenticate request using session/demo user helper (`getAuthenticatedUserId()`), parse and validate input, handle errors gracefully, and return appropriate JSON responses (201 on success, 400/401/500 on failure).
+3. **Create Collection Modal Component:**
+   - Create accessible `CreateCollectionDialog` component (`src/components/collections/create-collection-dialog.tsx`) using `@/components/ui/dialog`.
+   - Include required `name` input field and optional `description` textarea field, with validation feedback and character limits.
+   - Provide visual loading states, disabling buttons while submitting, and inline error banner if submission fails.
+4. **TopBar Action Integration:**
+   - Connect the existing "New Collection" button in `TopBar` (`src/components/layout/top-bar.tsx`) to open the `CreateCollectionDialog`.
+5. **User Feedback & UI Cache Synchronization:**
+   - Trigger toast notification on creation success or failure using the existing toast system (`useOptionalItemDrawer` / `showToast`).
+   - Trigger `router.refresh()` upon successful save so the sidebar collection list, dashboard collections grid, and collection stats update automatically.
+6. **Testing & Quality Assurance:**
+   - Add Vitest unit tests in `tests/unit/` covering collection validation and API route / DB query behaviors.
+   - Verify zero ESLint errors (`npm run lint`) and clean production build (`npm run build`).
 
 ---
 
 ## Notes
 
-- Work on tasks one by one with user permission before and after each task.
-- Ensure all public interfaces, component props, and re-exports preserve backwards compatibility so no outside call sites break.
+- Follow the same patterns established for items (user-scoping, server components fetching via `src/lib/db/*`, and client-side interactions calling API routes).
+- Collection color patterns are dynamically derived from the most-used item type in each collection, so manual color selection is omitted from creation.
+- Ensure demo user fallback works seamlessly when running without an active session, consistent with `src/lib/auth-guards.ts`.
+- Ensure modal dialog accessibility and responsive styles adhere to Devstash UI design conventions (dark mode tokens, rounded borders, clear focus rings).
 
 ---
 

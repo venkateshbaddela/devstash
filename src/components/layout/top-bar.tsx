@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { CreateItemDialog } from "@/components/items/create-item-dialog";
+import { CreateCollectionDialog } from "@/components/collections/create-collection-dialog";
 
 export function TopBar() {
   const { toggle } = useSidebar();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreateCollectionOpen, setIsCreateCollectionOpen] = useState(false);
 
   return (
     <>
@@ -48,6 +50,7 @@ export function TopBar() {
             variant="outline"
             size="sm"
             type="button"
+            onClick={() => setIsCreateCollectionOpen(true)}
             className="h-8 px-2 sm:px-2.5 text-xs font-medium cursor-pointer"
           >
             <FolderPlus className="size-3.5" />
@@ -66,6 +69,11 @@ export function TopBar() {
           </Button>
         </div>
       </header>
+
+      <CreateCollectionDialog
+        open={isCreateCollectionOpen}
+        onOpenChange={setIsCreateCollectionOpen}
+      />
 
       <CreateItemDialog
         open={isCreateOpen}

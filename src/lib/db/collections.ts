@@ -221,3 +221,119 @@ export async function getCollectionStats(
     favoriteCollections,
   };
 }
+
+export interface CreateCollectionData {
+  name: string;
+  description?: string | null;
+  color?: string | null;
+}
+
+/**
+ * Creates a new collection for a user.
+ */
+export async function createCollection(
+  userId: string,
+  data: CreateCollectionData
+): Promise<DashboardCollection> {
+  const collection = await prisma.collection.create({
+    data: {
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      color: data.color?.trim() || null,
+      userId,
+    },
+  });
+
+  return {
+    id: collection.id,
+    name: collection.name,
+    description: collection.description,
+    isFavorite: collection.isFavorite,
+    itemCount: 0,
+    accentColor: collection.color || "#3b82f6",
+    types: [],
+    createdAt: collection.createdAt,
+    updatedAt: collection.updatedAt,
+  };
+}
+
+/**
+ * Fetches a single collection by ID scoped to a user.
+ */
+export async function getCollectionById(
+  id: string,
+  userId: string
+): Promise<DashboardCollection | null> {
+  const col = await prisma.collection.findFirst({
+    where: {
+      id,
+      userId,
+    },
+    include: {
+      items: {
+        take: 100,
+        select: {
+          item: {
+            select: {
+              itemType: {
+                select: {
+                  name: true,
+                  icon: true,
+                  color: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          items: true,
+        },
+      },
+    },
+  });
+
+  if (!col) {
+    return null;
+  }
+
+  const typeMap = new Map<string, CollectionTypeInfo>();
+  for (const relation of col.items) {
+    const it = relation.item.itemType;
+    if (!it) continue;
+    const existing = typeMap.get(it.name);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      typeMap.set(it.name, {
+        name: it.name,
+        icon: it.icon,
+        color: it.color,
+        count: 1,
+      });
+    }
+  }
+
+  const types = Array.from(typeMap.values()).sort((a, b) => {
+    if (b.count !== a.count) {
+      return b.count - a.count;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  const mostUsedType = types[0];
+  const accentColor = mostUsedType?.color || col.color || "#3b82f6";
+
+  return {
+    id: col.id,
+    name: col.name,
+    description: col.description,
+    isFavorite: col.isFavorite,
+    itemCount: col._count.items,
+    accentColor,
+    types,
+    createdAt: col.createdAt,
+    updatedAt: col.updatedAt,
+  };
+}

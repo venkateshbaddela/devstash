@@ -4,6 +4,8 @@ import {
   getCollections,
   getSidebarCollections,
   getCollectionStats,
+  createCollection,
+  getCollectionById,
 } from "@/lib/db/collections";
 import { prisma } from "@/lib/prisma";
 
@@ -16,6 +18,8 @@ vi.mock("@/lib/prisma", () => ({
     collection: {
       findMany: vi.fn(),
       count: vi.fn(),
+      create: vi.fn(),
+      findFirst: vi.fn(),
     },
   },
 }));
@@ -161,6 +165,111 @@ describe("Collections Database Queries", () => {
         totalCollections: 12,
         favoriteCollections: 4,
       });
+    });
+  });
+
+  describe("createCollection", () => {
+    it("creates a new collection record scoped to the user with default values", async () => {
+      const mockCreated = {
+        id: "col-new-1",
+        name: "Cloud Architecture",
+        description: "AWS and GCP resources",
+        isFavorite: false,
+        color: null,
+        userId: "user-test-1",
+        createdAt: new Date("2026-09-15T10:00:00Z"),
+        updatedAt: new Date("2026-09-15T10:00:00Z"),
+      };
+
+      vi.mocked(prisma.collection.create).mockResolvedValue(mockCreated as never);
+
+      const result = await createCollection("user-test-1", {
+        name: "Cloud Architecture",
+        description: "AWS and GCP resources",
+      });
+
+      expect(prisma.collection.create).toHaveBeenCalledWith({
+        data: {
+          name: "Cloud Architecture",
+          description: "AWS and GCP resources",
+          color: null,
+          userId: "user-test-1",
+        },
+      });
+
+      expect(result).toEqual({
+        id: "col-new-1",
+        name: "Cloud Architecture",
+        description: "AWS and GCP resources",
+        isFavorite: false,
+        itemCount: 0,
+        accentColor: "#3b82f6",
+        types: [],
+        createdAt: mockCreated.createdAt,
+        updatedAt: mockCreated.updatedAt,
+      });
+    });
+
+    it("falls back to default accent color (#3b82f6) when color is not provided", async () => {
+      const mockCreated = {
+        id: "col-new-2",
+        name: "General",
+        description: null,
+        isFavorite: false,
+        color: null,
+        userId: "user-test-1",
+        createdAt: new Date("2026-09-15T10:00:00Z"),
+        updatedAt: new Date("2026-09-15T10:00:00Z"),
+      };
+
+      vi.mocked(prisma.collection.create).mockResolvedValue(mockCreated as never);
+
+      const result = await createCollection("user-test-1", {
+        name: "General",
+      });
+
+      expect(result.accentColor).toBe("#3b82f6");
+      expect(result.description).toBeNull();
+      expect(result.itemCount).toBe(0);
+    });
+  });
+
+  describe("getCollectionById", () => {
+    it("returns null when collection does not exist or user mismatch", async () => {
+      vi.mocked(prisma.collection.findFirst).mockResolvedValue(null);
+
+      const result = await getCollectionById("col-missing", "user-test-1");
+      expect(result).toBeNull();
+    });
+
+    it("returns mapped collection with derived accent color when found", async () => {
+      const mockFound = {
+        id: "col-found-1",
+        name: "TypeScript Tips",
+        description: "Helpful TS snippets",
+        isFavorite: true,
+        color: null,
+        createdAt: new Date("2026-01-01"),
+        updatedAt: new Date("2026-01-02"),
+        _count: { items: 1 },
+        items: [
+          {
+            item: {
+              itemType: { name: "snippet", icon: "Code", color: "#3b82f6" },
+            },
+          },
+        ],
+      };
+
+      vi.mocked(prisma.collection.findFirst).mockResolvedValue(mockFound as never);
+
+      const result = await getCollectionById("col-found-1", "user-test-1");
+
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe("col-found-1");
+      expect(result?.accentColor).toBe("#3b82f6");
+      expect(result?.itemCount).toBe(1);
+      expect(result?.types).toHaveLength(1);
     });
   });
 });
