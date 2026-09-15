@@ -1,42 +1,22 @@
-# Current Feature: Implement Collection Creation
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-1. **Database & Validation:**
-   - Define validation schema in `src/lib/validations/collections.ts` validating collection name (required, trimmed, max length) and optional description.
-   - Implement `createCollection` in `src/lib/db/collections.ts` to insert user-scoped collections using Prisma, returning the created collection entity.
-2. **Client API Route:**
-   - Create `POST /api/collections` route handler in `src/app/api/collections/route.ts` for client-side collection creation.
-   - Authenticate request using session/demo user helper (`getAuthenticatedUserId()`), parse and validate input, handle errors gracefully, and return appropriate JSON responses (201 on success, 400/401/500 on failure).
-3. **Create Collection Modal Component:**
-   - Create accessible `CreateCollectionDialog` component (`src/components/collections/create-collection-dialog.tsx`) using `@/components/ui/dialog`.
-   - Include required `name` input field and optional `description` textarea field, with validation feedback and character limits.
-   - Provide visual loading states, disabling buttons while submitting, and inline error banner if submission fails.
-4. **TopBar Action Integration:**
-   - Connect the existing "New Collection" button in `TopBar` (`src/components/layout/top-bar.tsx`) to open the `CreateCollectionDialog`.
-5. **User Feedback & UI Cache Synchronization:**
-   - Trigger toast notification on creation success or failure using the existing toast system (`useOptionalItemDrawer` / `showToast`).
-   - Trigger `router.refresh()` upon successful save so the sidebar collection list, dashboard collections grid, and collection stats update automatically.
-6. **Testing & Quality Assurance:**
-   - Add Vitest unit tests in `tests/unit/` covering collection validation and API route / DB query behaviors.
-   - Verify zero ESLint errors (`npm run lint`) and clean production build (`npm run build`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- Follow the same patterns established for items (user-scoping, server components fetching via `src/lib/db/*`, and client-side interactions calling API routes).
-- Collection color patterns are dynamically derived from the most-used item type in each collection, so manual color selection is omitted from creation.
-- Ensure demo user fallback works seamlessly when running without an active session, consistent with `src/lib/auth-guards.ts`.
-- Ensure modal dialog accessibility and responsive styles adhere to Devstash UI design conventions (dark mode tokens, rounded borders, clear focus rings).
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -440,4 +420,17 @@ In Progress
   - 100% passing across integration tests (`test:items`, `test:create`, `test:edit`, `test:delete`).
   - ESLint passing with 0 errors and 0 warnings.
   - Next.js production build (`npm run build`) passing cleanly.
+
+### Collection Creation (2026-09-15)
+
+- Implemented collection creation flow following the patterns established for items (user-scoped, server-side `lib/db` queries, and client-side API routes).
+- Built accessible `CreateCollectionDialog` (`src/components/collections/create-collection-dialog.tsx`) using shadcn `Dialog`, providing required name input, optional description textarea, loading spinner, and inline error handling.
+- Integrated creation dialog into `TopBar` (`src/components/layout/top-bar.tsx`) wired to the "New Collection" button.
+- Created `POST /api/collections` and `GET /api/collections` (`src/app/api/collections/route.ts`) with NextAuth session / demo-user authentication via `getAuthenticatedUserId()` and input validation.
+- Defined `createCollectionSchema` in `src/lib/validations/collections.ts` enforcing trimmed name and description constraints.
+- Added `createCollection` and `getCollectionById` in `src/lib/db/collections.ts` with Prisma database mutations and mapped `DashboardCollection` data.
+- Enforced automatic color pattern derivation from dominant item types within each collection, omitting manual color palette selection.
+- Synchronized UI updates using `router.refresh()` to update sidebar collections, dashboard collections grid, and collection stats cards, and displayed toast notifications via `showToast`.
+- Added unit test suites for collection validation (`collections-validation.test.ts`), API route handler (`collections-api.test.ts`), and database queries (`collections-query.test.ts`).
+- Verified 100% passing Vitest unit tests (239/239 passed), 0 ESLint errors/warnings (`npm run lint`), and clean Next.js production build (`npm run build`).
 
