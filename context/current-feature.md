@@ -1,34 +1,22 @@
-# Current Feature: Add Item to Collections
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- Support multi-collection assignment in `createItemSchema` and `updateItemSchema` Zod validation schemas (`collectionIds: string[]`), with backward compatibility for single `collectionId`.
-- Update `createItem` in `src/lib/db/items-mutations.ts` to link items to one or multiple user-owned collections during creation.
-- Update `updateItem` in `src/lib/db/items-mutations.ts` to reconcile collection memberships (adding new links, removing deselected links) inside the Prisma transaction.
-- Update `createItemAction` and `updateItemAction` in `src/actions/items.ts` to validate collection inputs and revalidate relevant cache paths.
-- Create a reusable multi-select collection picker component supporting selection of one or multiple collections with color dots and item counts.
-- Integrate collection selection into `CreateItemDialog` (`src/components/items/create-item-dialog.tsx`) to allow assigning new items to collections.
-- Integrate collection selection into `ItemDrawerEditForm` (`src/components/items/drawer/item-drawer-edit-form.tsx`) to allow editing collection memberships on existing items.
-- Ensure updated collection memberships reflect immediately in `ItemDrawer` view mode upon saving.
-- Add comprehensive Vitest unit tests covering validation schemas, database mutations, and server actions.
-- Verify 0 ESLint errors/warnings, passing unit and integration tests, and clean production build.
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- **Scope Boundary:** Do not worry about displaying the collection pages yet (per user specification). Focus solely on item creation and edit forms, validation, and database junction updates.
-- **Data Model:** Prisma schema already has `ItemCollection` join model (`@@id([itemId, collectionId])`) connecting `Item` and `Collection`.
-- **Security / Ownership:** Ensure collections being linked belong to the authenticated user to prevent IDOR / cross-user collection pollution.
-- **UI/UX Consistency:** Follow existing dark mode design tokens, rounded borders (`rounded-lg`), color indicators, and responsive layouts matching `devstash` standards.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -445,4 +433,17 @@ In Progress
 - Synchronized UI updates using `router.refresh()` to update sidebar collections, dashboard collections grid, and collection stats cards, and displayed toast notifications via `showToast`.
 - Added unit test suites for collection validation (`collections-validation.test.ts`), API route handler (`collections-api.test.ts`), and database queries (`collections-query.test.ts`).
 - Verified 100% passing Vitest unit tests (239/239 passed), 0 ESLint errors/warnings (`npm run lint`), and clean Next.js production build (`npm run build`).
+
+### Add Item to Collections (2026-09-18)
+
+- Added multi-collection assignment support (`collectionIds: string[]`) in `updateItemSchema` and `createItemSchema` in `src/lib/validations/items.ts`, preserving backwards compatibility with legacy single `collectionId` inputs via schema transformation.
+- Implemented `reconcileItemCollections` in `src/lib/db/items-mutations.ts` to transactionally reconcile item-collection junction records with user ownership checks, preventing IDOR vulnerabilities.
+- Updated `createItem` and `updateItem` in `src/lib/db/items-mutations.ts` to link items to user-owned collections upon creation and reconcile memberships on update.
+- Updated `updateItemAction` and `createItemAction` in `src/actions/items.ts` to revalidate `/collections` alongside `/dashboard` and `/items`.
+- Built reusable multi-select `ItemCollectionSelector` component (`src/components/items/item-collection-selector.tsx`) featuring collection color indicators, item counts, search/selection dropdown, and dismissible selected badges.
+- Integrated collection selection into `CreateItemDialog` (`src/components/items/create-item-dialog.tsx`) and `ItemDrawerEditForm` (`src/components/items/drawer/item-drawer-edit-form.tsx`), replacing the previous read-only collections section in the drawer.
+- Synchronized drawer edit state in `src/components/items/item-drawer.tsx` to immediately reflect updated collections in drawer view mode upon saving.
+- Added comprehensive unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` covering multi-collection validation, single collection backwards compatibility, junction reconciliation, and IDOR protection.
+- Verified 100% passing Vitest unit tests (249/249 passed across 21 suites), 0 ESLint errors/warnings (`npm run lint`), and clean Next.js production build (`npm run build`).
+
 
