@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { Tag, Folder, Calendar } from "lucide-react";
+import { Tag, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CodeEditor } from "@/components/ui/code-editor";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
+import { ItemCollectionSelector } from "@/components/items/item-collection-selector";
 import { isMarkdownItemType, isCodeItemType } from "@/lib/markdown";
 import type { ItemDetail } from "@/lib/db/items";
 
@@ -21,6 +22,8 @@ export interface ItemDrawerEditFormProps {
   setUrl: (val: string) => void;
   tagsInput: string;
   setTagsInput: (val: string) => void;
+  selectedCollectionIds: string[];
+  setSelectedCollectionIds: (ids: string[]) => void;
   isSaving: boolean;
   showContentField: boolean;
   showLanguageField: boolean;
@@ -43,6 +46,8 @@ export function ItemDrawerEditForm({
   setUrl,
   tagsInput,
   setTagsInput,
+  selectedCollectionIds,
+  setSelectedCollectionIds,
   isSaving,
   showContentField,
   showLanguageField,
@@ -236,39 +241,13 @@ export function ItemDrawerEditForm({
         </p>
       </div>
 
-      {/* Non-Editable Collections */}
-      <div className="space-y-2 pt-2 border-t border-border/60">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <Folder className="size-3.5" />
-            <span>Collections</span>
-          </span>
-          <span className="text-[11px] text-muted-foreground italic">
-            Read-only
-          </span>
-        </div>
-        {item?.collections && item.collections.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5 opacity-80">
-            {item.collections.map((col) => (
-              <span
-                key={col.id}
-                className="px-2.5 py-1 rounded-md text-xs bg-muted/40 border border-border/60 text-foreground flex items-center gap-1.5"
-              >
-                {col.color && (
-                  <span
-                    className="size-2 rounded-full shrink-0"
-                    style={{ backgroundColor: col.color }}
-                  />
-                )}
-                <span>{col.name}</span>
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground italic">
-            Not in any collections
-          </p>
-        )}
+      {/* Editable Collections */}
+      <div className="pt-2 border-t border-border/60">
+        <ItemCollectionSelector
+          selectedCollectionIds={selectedCollectionIds}
+          onChange={setSelectedCollectionIds}
+          disabled={isSaving}
+        />
       </div>
 
       {/* Non-Editable Details */}

@@ -11,6 +11,7 @@ export interface UpdateItemData {
   url?: string | null;
   language?: string | null;
   tags?: string[];
+  collectionIds?: string[];
 }
 
 export interface CreateItemData {
@@ -27,6 +28,7 @@ export interface CreateItemData {
   storageKey?: string | null;
   tags?: string[];
   collectionId?: string | null;
+  collectionIds?: string[];
 }
 
 /**
@@ -99,6 +101,54 @@ export async function reconcileItemTags(
 }
 
 /**
+ * Efficiently reconciles and links collections to an item inside a transaction.
+ * Disconnects existing item_collections and connects validated user-owned collections.
+ */
+export async function reconcileItemCollections(
+  tx: Prisma.TransactionClient,
+  itemId: string,
+  targetUserId: string,
+  collectionIds: string[]
+): Promise<void> {
+  const uniqueCollectionIds = Array.from(
+    new Set(
+      collectionIds
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0)
+    )
+  );
+
+  // 1. Delete all existing item-collection junction records for this item
+  await tx.itemCollection.deleteMany({
+    where: { itemId },
+  });
+
+  if (uniqueCollectionIds.length === 0) {
+    return;
+  }
+
+  // 2. Validate that the collections belong to targetUserId (prevent IDOR)
+  const validCollections = await tx.collection.findMany({
+    where: {
+      id: { in: uniqueCollectionIds },
+      userId: targetUserId,
+    },
+    select: { id: true },
+  });
+
+  // 3. Batch insert new junction records
+  if (validCollections.length > 0) {
+    await tx.itemCollection.createMany({
+      data: validCollections.map((col) => ({
+        itemId,
+        collectionId: col.id,
+      })),
+      skipDuplicates: true,
+    });
+  }
+}
+
+/**
  * Updates an item's editable fields and reconciles its tags.
  * Reconciles tags by disconnecting existing ones and connecting/creating new ones.
  * Returns the fresh ItemDetail.
@@ -126,6 +176,16 @@ export async function updateItem(
         });
 
         await reconcileItemTags(tx, itemId, targetUserId, data.tags);
+      }
+
+      // 2. Reconcile collections if collectionIds array is provided
+      if (Array.isArray(data.collectionIds)) {
+        await reconcileItemCollections(
+          tx,
+          itemId,
+          targetUserId,
+          data.collectionIds
+        );
       }
 
       // 2. Update core item properties
@@ -246,6 +306,30 @@ export async function createItem(
 
   return await prisma.$transaction(
     async (tx) => {
+      // Collect unique collection IDs from both collectionIds and collectionId
+      const targetCollectionIds = Array.from(
+        new Set(
+          [
+            ...(data.collectionIds || []),
+            ...(data.collectionId ? [data.collectionId] : []),
+          ]
+            .map((id) => id.trim())
+            .filter((id) => id.length > 0)
+        )
+      );
+
+      let validCollectionIds: string[] = [];
+      if (targetCollectionIds.length > 0) {
+        const validCollections = await tx.collection.findMany({
+          where: {
+            id: { in: targetCollectionIds },
+            userId: targetUserId,
+          },
+          select: { id: true },
+        });
+        validCollectionIds = validCollections.map((c) => c.id);
+      }
+
       const created = await tx.item.create({
         data: {
           title: data.title.trim(),
@@ -264,10 +348,12 @@ export async function createItem(
           storageKey: data.storageKey?.trim() || null,
           userId: targetUserId,
           itemTypeId: itemType.id,
-          ...(data.collectionId
+          ...(validCollectionIds.length > 0
             ? {
                 collections: {
-                  create: [{ collectionId: data.collectionId }],
+                  create: validCollectionIds.map((colId) => ({
+                    collectionId: colId,
+                  })),
                 },
               }
             : {}),

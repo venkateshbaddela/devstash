@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getItemById, updateItem, deleteItem, createItem } from "@/lib/db/items";
+import {
+  getItemById,
+  updateItem,
+  deleteItem,
+  createItem,
+  reconcileItemCollections,
+} from "@/lib/db/items";
 import { prisma } from "@/lib/prisma";
 
 const mockTx = {
@@ -12,6 +18,14 @@ const mockTx = {
     upsert: vi.fn(),
     findMany: vi.fn(),
     createMany: vi.fn(),
+  },
+  itemCollection: {
+    deleteMany: vi.fn(),
+    create: vi.fn(),
+    createMany: vi.fn(),
+  },
+  collection: {
+    findMany: vi.fn(),
   },
   item: {
     update: vi.fn(),
@@ -38,6 +52,14 @@ vi.mock("@/lib/prisma", () => ({
     tag: {
       upsert: vi.fn(),
       findMany: vi.fn(),
+      createMany: vi.fn(),
+    },
+    collection: {
+      findMany: vi.fn(),
+    },
+    itemCollection: {
+      deleteMany: vi.fn(),
+      create: vi.fn(),
       createMany: vi.fn(),
     },
     $transaction: vi.fn((cb: (tx: typeof mockTx) => unknown) => cb(mockTx)),
@@ -325,6 +347,67 @@ describe("Item Database Queries", () => {
       expect(mockTx.itemTag.createMany).not.toHaveBeenCalled();
       expect(result?.tags).toEqual([]);
     });
+
+    it("reconciles collection memberships inside transaction when collectionIds is provided", async () => {
+      vi.mocked(prisma.item.findFirst).mockResolvedValue({
+        id: "item-123",
+        userId: "user-123",
+      } as unknown as Awaited<ReturnType<typeof prisma.item.findFirst>>);
+
+      mockTx.collection.findMany.mockResolvedValue([
+        { id: "col-1" },
+        { id: "col-2" },
+      ]);
+      mockTx.itemCollection.createMany.mockResolvedValue({ count: 2 });
+      mockTx.item.update.mockResolvedValue({
+        ...mockDbItem,
+        collections: [
+          { collection: { id: "col-1", name: "Collection 1", color: "#3b82f6" } },
+          { collection: { id: "col-2", name: "Collection 2", color: "#10b981" } },
+        ],
+      });
+
+      const result = await updateItem("item-123", "user-123", {
+        title: "Updated Title",
+        collectionIds: ["col-1", "col-2", "col-1"],
+      });
+
+      expect(mockTx.itemCollection.deleteMany).toHaveBeenCalledWith({
+        where: { itemId: "item-123" },
+      });
+      expect(mockTx.collection.findMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ["col-1", "col-2"] },
+          userId: "user-123",
+        },
+        select: { id: true },
+      });
+      expect(mockTx.itemCollection.createMany).toHaveBeenCalledWith({
+        data: [
+          { itemId: "item-123", collectionId: "col-1" },
+          { itemId: "item-123", collectionId: "col-2" },
+        ],
+        skipDuplicates: true,
+      });
+      expect(result?.collections).toHaveLength(2);
+    });
+
+    it("preserves collection memberships when collectionIds is undefined", async () => {
+      vi.mocked(prisma.item.findFirst).mockResolvedValue({
+        id: "item-123",
+        userId: "user-123",
+      } as unknown as Awaited<ReturnType<typeof prisma.item.findFirst>>);
+
+      mockTx.item.update.mockResolvedValue(mockDbItem);
+
+      await updateItem("item-123", "user-123", {
+        title: "Only Title Changed",
+      });
+
+      expect(mockTx.itemCollection.deleteMany).not.toHaveBeenCalled();
+      expect(mockTx.collection.findMany).not.toHaveBeenCalled();
+      expect(mockTx.itemCollection.createMany).not.toHaveBeenCalled();
+    });
   });
 
   describe("deleteItem Query Function", () => {
@@ -583,6 +666,139 @@ describe("Item Database Queries", () => {
 
       expect(res).not.toBeNull();
       expect(res?.fileName).toBe("docker-compose.yml");
+    });
+
+    it("creates an item and links multiple user-owned collections", async () => {
+      vi.mocked(prisma.itemType.findFirst).mockResolvedValue({
+        id: "type-snippet-id",
+        name: "snippet",
+        icon: "Code",
+        color: "#3b82f6",
+      } as unknown as Awaited<ReturnType<typeof prisma.itemType.findFirst>>);
+
+      mockTx.collection.findMany.mockResolvedValue([
+        { id: "col-1" },
+        { id: "col-2" },
+      ]);
+      mockTx.item.create.mockResolvedValue({
+        id: "created-snippet-multi-col",
+      });
+      mockTx.item.findUnique.mockResolvedValue({
+        ...mockDbItem,
+        id: "created-snippet-multi-col",
+        collections: [
+          { collection: { id: "col-1", name: "React Patterns", color: "#3b82f6" } },
+          { collection: { id: "col-2", name: "UI Components", color: "#10b981" } },
+        ],
+      });
+
+      const res = await createItem("user-123", {
+        type: "snippet",
+        title: "Multi Collection Snippet",
+        collectionIds: ["col-1", "col-2"],
+      });
+
+      expect(mockTx.collection.findMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ["col-1", "col-2"] },
+          userId: "user-123",
+        },
+        select: { id: true },
+      });
+      expect(mockTx.item.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          title: "Multi Collection Snippet",
+          userId: "user-123",
+          collections: {
+            create: [
+              { collectionId: "col-1" },
+              { collectionId: "col-2" },
+            ],
+          },
+        }),
+      });
+      expect(res?.collections).toHaveLength(2);
+    });
+
+    it("filters out collections not owned by the user (IDOR defense) during creation", async () => {
+      vi.mocked(prisma.itemType.findFirst).mockResolvedValue({
+        id: "type-snippet-id",
+        name: "snippet",
+        icon: "Code",
+        color: "#3b82f6",
+      } as unknown as Awaited<ReturnType<typeof prisma.itemType.findFirst>>);
+
+      // User only owns col-1, col-foreign belongs to another user
+      mockTx.collection.findMany.mockResolvedValue([{ id: "col-1" }]);
+      mockTx.item.create.mockResolvedValue({
+        id: "created-snippet-safe",
+      });
+      mockTx.item.findUnique.mockResolvedValue({
+        ...mockDbItem,
+        id: "created-snippet-safe",
+        collections: [
+          { collection: { id: "col-1", name: "React Patterns", color: "#3b82f6" } },
+        ],
+      });
+
+      const res = await createItem("user-123", {
+        type: "snippet",
+        title: "Safe Snippet",
+        collectionIds: ["col-1", "col-foreign"],
+      });
+
+      expect(mockTx.item.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          collections: {
+            create: [{ collectionId: "col-1" }],
+          },
+        }),
+      });
+      expect(res).not.toBeNull();
+    });
+  });
+
+  describe("reconcileItemCollections Helper Function", () => {
+    it("deletes existing junctions and batch-creates verified user collections", async () => {
+      mockTx.collection.findMany.mockResolvedValue([{ id: "col-1" }]);
+      mockTx.itemCollection.createMany.mockResolvedValue({ count: 1 });
+
+      await reconcileItemCollections(
+        mockTx as unknown as Parameters<typeof reconcileItemCollections>[0],
+        "item-123",
+        "user-123",
+        ["col-1", "col-1", "col-other"]
+      );
+
+      expect(mockTx.itemCollection.deleteMany).toHaveBeenCalledWith({
+        where: { itemId: "item-123" },
+      });
+      expect(mockTx.collection.findMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ["col-1", "col-other"] },
+          userId: "user-123",
+        },
+        select: { id: true },
+      });
+      expect(mockTx.itemCollection.createMany).toHaveBeenCalledWith({
+        data: [{ itemId: "item-123", collectionId: "col-1" }],
+        skipDuplicates: true,
+      });
+    });
+
+    it("clears all collection junctions when an empty collectionIds array is passed", async () => {
+      await reconcileItemCollections(
+        mockTx as unknown as Parameters<typeof reconcileItemCollections>[0],
+        "item-123",
+        "user-123",
+        []
+      );
+
+      expect(mockTx.itemCollection.deleteMany).toHaveBeenCalledWith({
+        where: { itemId: "item-123" },
+      });
+      expect(mockTx.collection.findMany).not.toHaveBeenCalled();
+      expect(mockTx.itemCollection.createMany).not.toHaveBeenCalled();
     });
   });
 });

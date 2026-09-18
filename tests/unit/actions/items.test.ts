@@ -155,6 +155,33 @@ describe("Items Server Actions & Validation", () => {
 
       expect(result.success).toBe(false);
     });
+
+    it("accepts valid collectionIds and defaults to empty array when omitted", () => {
+      const resultWithCollections = updateItemSchema.safeParse({
+        title: "Test Item",
+        collectionIds: ["col-1", "col-2"],
+      });
+      expect(resultWithCollections.success).toBe(true);
+      if (resultWithCollections.success) {
+        expect(resultWithCollections.data.collectionIds).toEqual(["col-1", "col-2"]);
+      }
+
+      const resultDefault = updateItemSchema.safeParse({
+        title: "Test Item",
+      });
+      expect(resultDefault.success).toBe(true);
+      if (resultDefault.success) {
+        expect(resultDefault.data.collectionIds).toEqual([]);
+      }
+    });
+
+    it("fails when an empty collection ID string is provided in collectionIds", () => {
+      const result = updateItemSchema.safeParse({
+        title: "Test Item",
+        collectionIds: ["col-1", ""],
+      });
+      expect(result.success).toBe(false);
+    });
   });
 
   describe("updateItemAction", () => {
@@ -196,6 +223,7 @@ describe("Items Server Actions & Validation", () => {
         url: null,
         language: null,
         tags: ["javascript"],
+        collectionIds: [],
       });
     });
 
@@ -240,6 +268,7 @@ describe("Items Server Actions & Validation", () => {
       expect(result.message).toBe("Item updated successfully.");
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
       expect(revalidatePath).toHaveBeenCalledWith("/items", "layout");
+      expect(revalidatePath).toHaveBeenCalledWith("/collections", "layout");
     });
 
     it("handles database exceptions gracefully", async () => {
@@ -481,6 +510,51 @@ describe("Items Server Actions & Validation", () => {
 
       expect(result.success).toBe(false);
     });
+
+    it("validates collectionIds and maintains backward compatibility with collectionId", () => {
+      // Multiple collectionIds
+      const resultMulti = createItemSchema.safeParse({
+        type: "snippet",
+        title: "Snippet with collections",
+        collectionIds: ["col-1", "col-2"],
+      });
+      expect(resultMulti.success).toBe(true);
+      if (resultMulti.success) {
+        expect(resultMulti.data.collectionIds).toEqual(["col-1", "col-2"]);
+      }
+
+      // Single collectionId backwards compatibility
+      const resultSingle = createItemSchema.safeParse({
+        type: "snippet",
+        title: "Snippet with single collection",
+        collectionId: "col-legacy",
+      });
+      expect(resultSingle.success).toBe(true);
+      if (resultSingle.success) {
+        expect(resultSingle.data.collectionIds).toEqual(["col-legacy"]);
+      }
+
+      // Merging and deduplication
+      const resultMerged = createItemSchema.safeParse({
+        type: "snippet",
+        title: "Snippet with merged collections",
+        collectionId: "col-1",
+        collectionIds: ["col-1", "col-2"],
+      });
+      expect(resultMerged.success).toBe(true);
+      if (resultMerged.success) {
+        expect(resultMerged.data.collectionIds).toEqual(["col-1", "col-2"]);
+      }
+    });
+
+    it("fails when an empty collection ID string is in collectionIds", () => {
+      const result = createItemSchema.safeParse({
+        type: "note",
+        title: "Test Note",
+        collectionIds: ["valid-id", ""],
+      });
+      expect(result.success).toBe(false);
+    });
   });
 
   describe("createItemAction", () => {
@@ -572,6 +646,7 @@ describe("Items Server Actions & Validation", () => {
       expect(result.message).toBe("Item created successfully.");
       expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
       expect(revalidatePath).toHaveBeenCalledWith("/items", "layout");
+      expect(revalidatePath).toHaveBeenCalledWith("/collections", "layout");
     });
 
     it("handles unexpected database exceptions gracefully", async () => {
@@ -629,6 +704,7 @@ describe("Items Server Actions & Validation", () => {
         fileUrl: "/api/files/download?key=uploads/user-123/docker-compose.yml",
         tags: [],
         collectionId: null,
+        collectionIds: [],
       });
     });
 

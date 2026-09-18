@@ -47,6 +47,7 @@ export function ItemDrawer() {
   const [language, setLanguage] = useState("");
   const [url, setUrl] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
 
   // Active display data: prefer full item, fallback to previewItem during initial loading
   const displayTitle = item?.title ?? previewItem?.title ?? "";
@@ -90,6 +91,7 @@ export function ItemDrawer() {
     setLanguage(item.language || "");
     setUrl(item.url || "");
     setTagsInput(item.tags && item.tags.length > 0 ? item.tags.join(", ") : "");
+    setSelectedCollectionIds(item.collections ? item.collections.map((c) => c.id) : []);
     setEditingItemId(displayId);
   };
 
@@ -102,6 +104,7 @@ export function ItemDrawer() {
       setLanguage(item.language || "");
       setUrl(item.url || "");
       setTagsInput(item.tags && item.tags.length > 0 ? item.tags.join(", ") : "");
+      setSelectedCollectionIds(item.collections ? item.collections.map((c) => c.id) : []);
     }
   };
 
@@ -128,6 +131,7 @@ export function ItemDrawer() {
         language: showLanguageField ? (language.trim() || null) : (item?.language ?? null),
         url: showUrlField ? (url.trim() || null) : (item?.url ?? null),
         tags: parsedTags,
+        collectionIds: selectedCollectionIds,
       });
 
       if (res.success && res.data) {
@@ -250,6 +254,8 @@ export function ItemDrawer() {
                 setUrl={setUrl}
                 tagsInput={tagsInput}
                 setTagsInput={setTagsInput}
+                selectedCollectionIds={selectedCollectionIds}
+                setSelectedCollectionIds={setSelectedCollectionIds}
                 isSaving={isSaving}
                 showContentField={showContentField}
                 showLanguageField={showLanguageField}

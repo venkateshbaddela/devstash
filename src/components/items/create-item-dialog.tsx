@@ -23,6 +23,7 @@ import { useOptionalItemDrawer } from "@/components/items/item-drawer-context";
 import { CreationItemType } from "@/lib/validations/items";
 import { TYPE_CONFIG } from "@/lib/constants/item-types";
 import { ItemTypeSelector } from "@/components/items/item-type-selector";
+import { ItemCollectionSelector } from "@/components/items/item-collection-selector";
 import { CodeEditor } from "@/components/ui/code-editor";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { isMarkdownItemType, isCodeItemType } from "@/lib/markdown";
@@ -34,6 +35,7 @@ interface CreateItemDialogProps {
   onOpenChange: (open: boolean) => void;
   defaultType?: CreationItemType;
   initialFile?: File | null;
+  initialCollectionId?: string | null;
   onSuccess?: (item: ItemDetail) => void;
 }
 
@@ -42,6 +44,7 @@ export function CreateItemDialog({
   onOpenChange,
   defaultType = "snippet",
   initialFile = null,
+  initialCollectionId = null,
   onSuccess,
 }: CreateItemDialogProps) {
   const router = useRouter();
@@ -55,6 +58,9 @@ export function CreateItemDialog({
   const [url, setUrl] = React.useState("");
   const [language, setLanguage] = React.useState("");
   const [tagsInput, setTagsInput] = React.useState("");
+  const [selectedCollectionIds, setSelectedCollectionIds] = React.useState<
+    string[]
+  >(initialCollectionId ? [initialCollectionId] : []);
   const [uploadedFile, setUploadedFile] = React.useState<UploadedFileData | null>(null);
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -67,10 +73,13 @@ export function CreateItemDialog({
     setUrl("");
     setLanguage("");
     setTagsInput("");
+    setSelectedCollectionIds(
+      initialCollectionId ? [initialCollectionId] : []
+    );
     setUploadedFile(null);
     setError(null);
     setIsSubmitting(false);
-  }, []);
+  }, [initialCollectionId]);
 
   const [prevOpen, setPrevOpen] = React.useState(open);
   const [prevDefaultType, setPrevDefaultType] = React.useState(defaultType);
@@ -80,6 +89,9 @@ export function CreateItemDialog({
     if (open) {
       setSelectedType(defaultType);
       resetForm();
+      if (initialCollectionId) {
+        setSelectedCollectionIds([initialCollectionId]);
+      }
       if (initialFile) {
         setTitle(initialFile.name);
       }
@@ -141,6 +153,7 @@ export function CreateItemDialog({
         mimeType: isFileOrImage ? uploadedFile?.mimeType : null,
         storageKey: isFileOrImage ? uploadedFile?.storageKey : null,
         tags: parsedTags,
+        collectionIds: selectedCollectionIds,
       });
 
       if (!res.success || !res.data) {
@@ -387,6 +400,13 @@ export function CreateItemDialog({
                 className="h-9 text-xs sm:text-sm font-mono bg-background/60 border-border/70 rounded-lg"
               />
             </div>
+
+            {/* Collections (Optional) */}
+            <ItemCollectionSelector
+              selectedCollectionIds={selectedCollectionIds}
+              onChange={setSelectedCollectionIds}
+              disabled={isSubmitting}
+            />
 
             {/* Error Message Alert */}
             {error && (

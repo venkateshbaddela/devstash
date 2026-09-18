@@ -63,6 +63,7 @@ export async function updateItemAction(
     try {
       revalidatePath("/dashboard");
       revalidatePath("/items", "layout");
+      revalidatePath("/collections", "layout");
     } catch {
       // Ignored outside Next.js request lifecycle (e.g. standalone scripts or testing)
     }
@@ -187,6 +188,7 @@ export async function createItemAction(
     try {
       revalidatePath("/dashboard");
       revalidatePath("/items", "layout");
+      revalidatePath("/collections", "layout");
     } catch {
       // Ignored outside Next.js request lifecycle
     }

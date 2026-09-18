@@ -69,6 +69,15 @@ export const updateItemSchema = z.object({
     )
     .optional()
     .default([]),
+  collectionIds: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, "Collection ID cannot be empty.")
+    )
+    .optional()
+    .default([]),
 });
 
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
@@ -197,6 +206,15 @@ export const createItemSchema = z
       )
       .optional()
       .default([]),
+    collectionIds: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(1, "Collection ID cannot be empty.")
+      )
+      .optional()
+      .default([]),
     collectionId: z
       .string()
       .trim()
@@ -241,6 +259,16 @@ export const createItemSchema = z
         });
       }
     }
+  })
+  .transform((data) => {
+    const ids = new Set(data.collectionIds);
+    if (data.collectionId) {
+      ids.add(data.collectionId);
+    }
+    return {
+      ...data,
+      collectionIds: Array.from(ids),
+    };
   });
 
 export type CreateItemInput = z.infer<typeof createItemSchema>;

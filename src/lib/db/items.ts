@@ -545,6 +545,7 @@ export {
   updateItem,
   deleteItem,
   reconcileItemTags,
+  reconcileItemCollections,
   type CreateItemData,
   type UpdateItemData,
 } from "./items-mutations";

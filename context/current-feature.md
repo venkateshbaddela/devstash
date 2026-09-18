@@ -1,22 +1,34 @@
-# Current Feature
+# Current Feature: Add Item to Collections
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Support multi-collection assignment in `createItemSchema` and `updateItemSchema` Zod validation schemas (`collectionIds: string[]`), with backward compatibility for single `collectionId`.
+- Update `createItem` in `src/lib/db/items-mutations.ts` to link items to one or multiple user-owned collections during creation.
+- Update `updateItem` in `src/lib/db/items-mutations.ts` to reconcile collection memberships (adding new links, removing deselected links) inside the Prisma transaction.
+- Update `createItemAction` and `updateItemAction` in `src/actions/items.ts` to validate collection inputs and revalidate relevant cache paths.
+- Create a reusable multi-select collection picker component supporting selection of one or multiple collections with color dots and item counts.
+- Integrate collection selection into `CreateItemDialog` (`src/components/items/create-item-dialog.tsx`) to allow assigning new items to collections.
+- Integrate collection selection into `ItemDrawerEditForm` (`src/components/items/drawer/item-drawer-edit-form.tsx`) to allow editing collection memberships on existing items.
+- Ensure updated collection memberships reflect immediately in `ItemDrawer` view mode upon saving.
+- Add comprehensive Vitest unit tests covering validation schemas, database mutations, and server actions.
+- Verify 0 ESLint errors/warnings, passing unit and integration tests, and clean production build.
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- **Scope Boundary:** Do not worry about displaying the collection pages yet (per user specification). Focus solely on item creation and edit forms, validation, and database junction updates.
+- **Data Model:** Prisma schema already has `ItemCollection` join model (`@@id([itemId, collectionId])`) connecting `Item` and `Collection`.
+- **Security / Ownership:** Ensure collections being linked belong to the authenticated user to prevent IDOR / cross-user collection pollution.
+- **UI/UX Consistency:** Follow existing dark mode design tokens, rounded borders (`rounded-lg`), color indicators, and responsive layouts matching `devstash` standards.
 
 ---
 
