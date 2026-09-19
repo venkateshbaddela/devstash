@@ -1,34 +1,22 @@
-# Current Feature: Collection Actions: Edit, Delete & Favorite
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- Add action buttons on `/collections/[id]` header for Favorite (icon/button placeholder only), Edit (triggers edit modal), and Delete (triggers delete confirmation modal).
-- Create `EditCollectionDialog` component allowing users to edit collection metadata (name, description) with Zod validation, loading state, error handling, and toast feedback.
-- Create `DeleteCollectionDialog` confirmation modal with explicit notice that items will NOT be deleted, cascading deletion of collection links, and redirect to `/collections` upon deletion.
-- Update `CollectionCard` (`src/components/collections/collection-card.tsx`) to provide a 3-dots dropdown menu with Favorite, Edit, and Delete options.
-- Ensure clicking the 3-dots dropdown menu does not trigger card navigation, while clicking anywhere else on `CollectionCard` navigates to `/collections/[id]`.
-- Implement `updateCollection` and `deleteCollection` in `src/lib/db/collections.ts` with user authorization scoping and demo user fallback.
-- Implement `updateCollectionAction` and `deleteCollectionAction` in `src/actions/collections.ts` with Zod validation, NextAuth session authentication, and cache revalidation (`/collections`, `/collections/[id]`, `/dashboard`).
-- Add comprehensive Vitest unit tests covering validation, database mutations, and server actions.
-- Verify 0 ESLint errors/warnings, 100% passing Vitest unit tests, and clean production build (`npm run build`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- **Favorite Button:** Per requirements, do NOT implement favorites persistence yet; only render the icon/button in the header and card dropdown.
-- **Item Safety on Collection Delete:** Deleting a collection must NOT delete any items. Only the collection record and its `ItemCollection` junction links are deleted, preserving all underlying items in the user's stash.
-- **Event Propagation:** Ensure the 3-dots dropdown button and menu items stop click propagation so the wrapping `CollectionCard` link to `/collections/[id]` does not fire.
-- **Shell & Drawer Compatibility:** Keep all collection modals compatible with `ItemDrawerProvider` toast notifications and React 19 / Next.js 16 conventions.
-- **Redirection:** When deleting a collection from its detail page (`/collections/[id]`), navigate back to `/collections` after deletion succeeds.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -471,6 +459,19 @@ In Progress
 - Protected `/collections/:path*` route prefix with NextAuth authentication in `src/proxy.ts`.
 - Added unit tests in `tests/unit/lib/collections-query.test.ts` and integration test script in `scripts/test-collections-pages.ts`.
 - Verified 100% passing across Vitest unit tests (254/254 passed across 21 suites), 0 ESLint errors/warnings (`npm run lint`), and clean Next.js production build (`npm run build`).
+
+### Collection Actions: Edit, Delete & Favorite (2026-09-19)
+
+- Created `updateCollectionSchema` in `src/lib/validations/collections.ts` validating name (required, 1-100 characters) and description (optional, max 1000 characters).
+- Implemented `updateCollection` and `deleteCollection` in `src/lib/db/collections.ts` scoped to user ID with ownership verification and demo user fallback. Deleting a collection cascades removal of junction links in `item_collections` while keeping all stash items intact.
+- Created Server Actions `updateCollectionAction` and `deleteCollectionAction` in `src/actions/collections.ts` with NextAuth authentication, Zod validation, and cache revalidation for `/collections`, `/collections/[id]`, and `/dashboard`.
+- Built `EditCollectionDialog` modal (`src/components/collections/edit-collection-dialog.tsx`) allowing users to edit collection name and description with validation, loading states, and toast feedback.
+- Built `DeleteCollectionDialog` confirmation modal (`src/components/collections/delete-collection-dialog.tsx`) with explicit copy guaranteeing items in the collection will not be deleted, and optional redirection to `/collections`.
+- Built `CollectionDetailHeaderActions` (`src/components/collections/collection-detail-header-actions.tsx`) on `/collections/[id]` providing Favorite (placeholder icon/button), Edit, Delete, and New Item actions.
+- Updated `CollectionCard` (`src/components/collections/collection-card.tsx`) with an accessible 3-dots dropdown menu providing Favorite, Edit, and Delete options, with click propagation isolation to preserve card navigation to `/collections/[id]`.
+- Added unit tests in `tests/unit/lib/collections-validation.test.ts`, `tests/unit/lib/collections-query.test.ts`, and `tests/unit/actions/collections.test.ts`.
+- Verified 100% passing across Vitest unit tests (274/274 passed across 22 suites), 0 ESLint errors/warnings (`npm run lint`), and clean Next.js production build (`npm run build`).
+
 
 
 
