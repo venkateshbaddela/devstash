@@ -121,10 +121,11 @@ export async function deleteItemAction(
       };
     }
 
-    // Revalidate paths so dashboard and items list reflect deletion
+    // Revalidate paths so dashboard, items list, and collections reflect deletion
     try {
       revalidatePath("/dashboard");
       revalidatePath("/items", "layout");
+      revalidatePath("/collections", "layout");
     } catch {
       // Ignored outside Next.js request lifecycle (e.g. standalone scripts or testing)
     }

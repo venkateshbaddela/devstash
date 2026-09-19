@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import type { DashboardItem } from "@/lib/db/items";
 
 export const DEMO_USER_EMAIL = "demo@devstash.io";
 
@@ -258,16 +259,21 @@ export async function createCollection(
 }
 
 /**
- * Fetches a single collection by ID scoped to a user.
+ * Fetches a single collection by ID scoped to a user (defaults to demo user).
  */
-export async function getCollectionById(
+export const getCollectionById = cache(async function getCollectionById(
   id: string,
-  userId: string
+  userId?: string
 ): Promise<DashboardCollection | null> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+  if (!targetUserId) {
+    return null;
+  }
+
   const col = await prisma.collection.findFirst({
     where: {
       id,
-      userId,
+      userId: targetUserId,
     },
     include: {
       items: {
@@ -336,4 +342,89 @@ export async function getCollectionById(
     createdAt: col.createdAt,
     updatedAt: col.updatedAt,
   };
-}
+});
+
+/**
+ * Fetches items belonging to a collection, scoped to the user, formatted for DashboardItem.
+ */
+export const getCollectionItems = cache(async function getCollectionItems(
+  collectionId: string,
+  userId?: string
+): Promise<DashboardItem[]> {
+  const targetUserId = userId ?? (await getDefaultUserId());
+  if (!targetUserId) {
+    return [];
+  }
+
+  const itemCollections = await prisma.itemCollection.findMany({
+    where: {
+      collectionId,
+      collection: {
+        userId: targetUserId,
+      },
+    },
+    orderBy: {
+      addedAt: "desc",
+    },
+    select: {
+      item: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          contentType: true,
+          url: true,
+          language: true,
+          fileUrl: true,
+          fileName: true,
+          fileSize: true,
+          mimeType: true,
+          isFavorite: true,
+          isPinned: true,
+          createdAt: true,
+          itemType: {
+            select: {
+              name: true,
+              icon: true,
+              color: true,
+            },
+          },
+          tags: {
+            include: {
+              tag: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return itemCollections.map(({ item }) => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    content: null,
+    contentType: item.contentType,
+    url: item.url ?? null,
+    language: item.language ?? null,
+    fileUrl: item.fileUrl ?? null,
+    fileName: item.fileName ?? null,
+    fileSize: item.fileSize ? Number(item.fileSize) : null,
+    mimeType: item.mimeType ?? null,
+    isFavorite: item.isFavorite,
+    isPinned: item.isPinned,
+    type: item.itemType.name,
+    typeIcon: item.itemType.icon,
+    typeColor: item.itemType.color,
+    tags: item.tags.map((t) => t.tag.name),
+    date: new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+    }).format(item.createdAt),
+    createdAt: item.createdAt,
+  }));
+});

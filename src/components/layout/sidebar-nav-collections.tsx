@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Folder, Star, ChevronDown } from "lucide-react";
+import { Folder, Star, ChevronDown, ArrowRight } from "lucide-react";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { cn } from "@/lib/utils";
 
@@ -70,9 +70,10 @@ export function SidebarNavCollections({
               </div>
               <nav className="space-y-0.5" aria-label="Favorite Collections">
                 {favoriteCollections.map((col) => {
-                  const colHref = `/dashboard?collection=${col.id}`;
+                  const colHref = `/collections/${col.id}`;
                   const isActive =
-                    pathname === "/dashboard" && activeCollectionId === col.id;
+                    pathname === `/collections/${col.id}` ||
+                    (pathname === "/dashboard" && activeCollectionId === col.id);
 
                   return (
                     <Link
@@ -108,9 +109,10 @@ export function SidebarNavCollections({
               </div>
               <nav className="space-y-0.5" aria-label="Recent Collections">
                 {recentCollections.map((col) => {
-                  const colHref = `/dashboard?collection=${col.id}`;
+                  const colHref = `/collections/${col.id}`;
                   const isActive =
-                    pathname === "/dashboard" && activeCollectionId === col.id;
+                    pathname === `/collections/${col.id}` ||
+                    (pathname === "/dashboard" && activeCollectionId === col.id);
                   const circleColor =
                     col.accentColor ||
                     ("color" in col && col.color ? (col.color as string) : undefined) ||
@@ -147,6 +149,22 @@ export function SidebarNavCollections({
               </nav>
             </div>
           )}
+
+          {/* View all collections */}
+          <div className="pt-1 px-1">
+            <Link
+              href="/collections"
+              onClick={onItemClick}
+              className={cn(
+                "group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors",
+                pathname === "/collections" &&
+                  "bg-accent text-accent-foreground font-semibold"
+              )}
+            >
+              <span>View all collections</span>
+              <ArrowRight className="size-3.5 text-muted-foreground/70 group-hover:text-foreground transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
         </div>
       )}
     </div>

@@ -1,22 +1,35 @@
-# Current Feature
+# Current Feature: Collections & Collection Detail Pages
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Create `/collections` page (`src/app/(app)/collections/page.tsx`) displaying all user collections in a responsive grid using collection cards.
+- Create `/collections/[id]` dynamic route page (`src/app/(app)/collections/[id]/page.tsx`) to show collection header metadata, stats, breadcrumbs, and all items within that collection.
+- Render collection items using existing item cards (`ItemCard` and `ImageCard`), enabling seamless drawer view/edit integration.
+- Add "View all collections" link/button in the sidebar navigation (`src/components/layout/sidebar-nav-collections.tsx`) pointing to `/collections` and update collection item links to `/collections/[id]`.
+- Update `CollectionsGrid` (`src/components/dashboard/collections-grid.tsx`) to link all collection cards to `/collections/[id]` and the header "View all" link to `/collections`.
+- Implement `getCollectionItems` in `src/lib/db/collections.ts` to query collection items formatted for `DashboardItem` with user scoping.
+- Enhance `getCollectionById` in `src/lib/db/collections.ts` with optional `userId` fallback to demo user for consistent RSC usage.
+- Add route protection for `/collections/:path*` in `src/proxy.ts`.
+- Add comprehensive Vitest unit tests for collection item queries in `tests/unit/lib/collections-query.test.ts`.
+- Verify 0 ESLint errors/warnings, passing Vitest unit tests, and clean production build (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- **Layout & Shell:** Place routes under `src/app/(app)/collections` so they automatically inherit `DashboardLayout`, `TopBar`, and `ItemDrawerProvider`.
+- **Card Reuse:** Use existing `ItemCard` for text/link/file items and `ImageCard` for images within `/collections/[id]`.
+- **Navigation & Links:** Ensure "View all collections" in sidebar and "View all" on dashboard link to `/collections`. Ensure all collection cards link to `/collections/[id]`.
+- **Security & Scoping:** Scope all collection queries to the authenticated user ID (with fallback to default demo user in development).
+- **Empty States:** Provide clean empty states when no collections exist or when a collection has no items yet.
 
 ---
 

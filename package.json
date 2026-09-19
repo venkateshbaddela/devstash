@@ -25,6 +25,7 @@
     "test:delete": "tsx scripts/test-item-delete.ts",
     "test:create": "tsx scripts/test-item-create.ts",
     "test:files": "tsx scripts/test-file-upload.ts",
+    "test:collections": "tsx scripts/test-collections-pages.ts",
     "studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

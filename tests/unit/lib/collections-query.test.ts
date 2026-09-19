@@ -6,6 +6,7 @@ import {
   getCollectionStats,
   createCollection,
   getCollectionById,
+  getCollectionItems,
 } from "@/lib/db/collections";
 import { prisma } from "@/lib/prisma";
 
@@ -21,6 +22,9 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
       findFirst: vi.fn(),
     },
+    itemCollection: {
+      findMany: vi.fn(),
+    },
   },
 }));
 
@@ -31,7 +35,7 @@ describe("Collections Database Queries", () => {
 
   describe("getDashboardCollections", () => {
     it("returns empty array if target user is not found", async () => {
-      vi.mocked(prisma.user.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
 
       const result = await getDashboardCollections();
       expect(result).toEqual([]);
@@ -270,6 +274,161 @@ describe("Collections Database Queries", () => {
       expect(result?.accentColor).toBe("#3b82f6");
       expect(result?.itemCount).toBe(1);
       expect(result?.types).toHaveLength(1);
+    });
+
+    it("falls back to demo user when userId is not provided", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: "demo-user-id" } as never);
+      vi.mocked(prisma.collection.findFirst).mockResolvedValue(null);
+
+      await getCollectionById("col-1");
+
+      expect(prisma.collection.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: "col-1",
+            userId: "demo-user-id",
+          },
+        })
+      );
+    });
+
+    it("returns null if target user cannot be resolved", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+
+      const result = await getCollectionById("col-1");
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("getCollectionItems", () => {
+    it("returns empty array if target user cannot be resolved", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+
+      const items = await getCollectionItems("col-1");
+      expect(items).toEqual([]);
+    });
+
+    it("queries items scoped to collection and user ordered by addedAt desc", async () => {
+      const mockRelations = [
+        {
+          item: {
+            id: "item-1",
+            title: "Reusable Hook",
+            description: "Custom React hook",
+            content: "export function useHook() {}",
+            contentType: "TEXT",
+            url: null,
+            language: "typescript",
+            fileUrl: null,
+            fileName: null,
+            fileSize: null,
+            mimeType: null,
+            isFavorite: true,
+            isPinned: false,
+            createdAt: new Date("2026-03-01T12:00:00Z"),
+            itemType: {
+              name: "snippet",
+              icon: "Code",
+              color: "#3b82f6",
+            },
+            tags: [
+              { tag: { name: "react" } },
+              { tag: { name: "hooks" } },
+            ],
+          },
+        },
+        {
+          item: {
+            id: "item-2",
+            title: "Architecture Diagram",
+            description: "System diagram",
+            content: null,
+            contentType: "FILE",
+            url: null,
+            language: null,
+            fileUrl: "https://storage.devstash.io/diagram.png",
+            fileName: "diagram.png",
+            fileSize: BigInt(2048),
+            mimeType: "image/png",
+            isFavorite: false,
+            isPinned: true,
+            createdAt: new Date("2026-03-02T15:00:00Z"),
+            itemType: {
+              name: "image",
+              icon: "Image",
+              color: "#ec4899",
+            },
+            tags: [],
+          },
+        },
+      ];
+
+      vi.mocked(prisma.itemCollection.findMany).mockResolvedValue(mockRelations as never);
+
+      const items = await getCollectionItems("col-123", "user-456");
+
+      expect(prisma.itemCollection.findMany).toHaveBeenCalledWith({
+        where: {
+          collectionId: "col-123",
+          collection: {
+            userId: "user-456",
+          },
+        },
+        orderBy: {
+          addedAt: "desc",
+        },
+        select: expect.objectContaining({
+          item: expect.any(Object),
+        }),
+      });
+
+      expect(items).toHaveLength(2);
+
+      expect(items[0]).toEqual(
+        expect.objectContaining({
+          id: "item-1",
+          title: "Reusable Hook",
+          type: "snippet",
+          typeIcon: "Code",
+          typeColor: "#3b82f6",
+          tags: ["react", "hooks"],
+          isFavorite: true,
+          isPinned: false,
+        })
+      );
+
+      expect(items[1]).toEqual(
+        expect.objectContaining({
+          id: "item-2",
+          title: "Architecture Diagram",
+          type: "image",
+          typeIcon: "Image",
+          typeColor: "#ec4899",
+          tags: [],
+          fileUrl: "https://storage.devstash.io/diagram.png",
+          fileSize: 2048,
+          isFavorite: false,
+          isPinned: true,
+        })
+      );
+    });
+
+    it("falls back to demo user when userId is omitted", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: "demo-user-id" } as never);
+      vi.mocked(prisma.itemCollection.findMany).mockResolvedValue([]);
+
+      await getCollectionItems("col-123");
+
+      expect(prisma.itemCollection.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            collectionId: "col-123",
+            collection: {
+              userId: "demo-user-id",
+            },
+          },
+        })
+      );
     });
   });
 });
