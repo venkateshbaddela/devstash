@@ -1,35 +1,22 @@
-# Current Feature: Collections & Collection Detail Pages
+# Current Feature
 
 ---
 
 ## Status
 
-In Progress
+Not Started
 
 ---
 
 ## Goals
 
-- Create `/collections` page (`src/app/(app)/collections/page.tsx`) displaying all user collections in a responsive grid using collection cards.
-- Create `/collections/[id]` dynamic route page (`src/app/(app)/collections/[id]/page.tsx`) to show collection header metadata, stats, breadcrumbs, and all items within that collection.
-- Render collection items using existing item cards (`ItemCard` and `ImageCard`), enabling seamless drawer view/edit integration.
-- Add "View all collections" link/button in the sidebar navigation (`src/components/layout/sidebar-nav-collections.tsx`) pointing to `/collections` and update collection item links to `/collections/[id]`.
-- Update `CollectionsGrid` (`src/components/dashboard/collections-grid.tsx`) to link all collection cards to `/collections/[id]` and the header "View all" link to `/collections`.
-- Implement `getCollectionItems` in `src/lib/db/collections.ts` to query collection items formatted for `DashboardItem` with user scoping.
-- Enhance `getCollectionById` in `src/lib/db/collections.ts` with optional `userId` fallback to demo user for consistent RSC usage.
-- Add route protection for `/collections/:path*` in `src/proxy.ts`.
-- Add comprehensive Vitest unit tests for collection item queries in `tests/unit/lib/collections-query.test.ts`.
-- Verify 0 ESLint errors/warnings, passing Vitest unit tests, and clean production build (`npm run build`).
+<!-- Goals will be loaded from a feature spec or user prompt -->
 
 ---
 
 ## Notes
 
-- **Layout & Shell:** Place routes under `src/app/(app)/collections` so they automatically inherit `DashboardLayout`, `TopBar`, and `ItemDrawerProvider`.
-- **Card Reuse:** Use existing `ItemCard` for text/link/file items and `ImageCard` for images within `/collections/[id]`.
-- **Navigation & Links:** Ensure "View all collections" in sidebar and "View all" on dashboard link to `/collections`. Ensure all collection cards link to `/collections/[id]`.
-- **Security & Scoping:** Scope all collection queries to the authenticated user ID (with fallback to default demo user in development).
-- **Empty States:** Provide clean empty states when no collections exist or when a collection has no items yet.
+<!-- Notes and constraints will be loaded with the feature -->
 
 ---
 
@@ -458,5 +445,20 @@ In Progress
 - Synchronized drawer edit state in `src/components/items/item-drawer.tsx` to immediately reflect updated collections in drawer view mode upon saving.
 - Added comprehensive unit tests in `tests/unit/actions/items.test.ts` and `tests/unit/lib/items-query.test.ts` covering multi-collection validation, single collection backwards compatibility, junction reconciliation, and IDOR protection.
 - Verified 100% passing Vitest unit tests (249/249 passed across 21 suites), 0 ESLint errors/warnings (`npm run lint`), and clean Next.js production build (`npm run build`).
+
+### Collections & Collection Detail Pages (2026-09-19)
+
+- Created `/collections` page (`src/app/(app)/collections/page.tsx`) displaying all user collections in a responsive 3-column grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`) with collection stats overview, breadcrumbs, and empty states.
+- Created `/collections/[id]` dynamic route page (`src/app/(app)/collections/[id]/page.tsx`) displaying collection metadata header, stats (items count, favorite status, creation date), breadcrumbs, and item card grid (`ItemCard` and `ImageCard`) integrated with `ItemDrawer`.
+- Built reusable collection components: `CollectionCard` (`src/components/collections/collection-card.tsx`), `CreateCollectionButton`, and `CreateCollectionItemButton`.
+- Updated `CollectionsGrid` (`src/components/dashboard/collections-grid.tsx`) to link all collection cards directly to `/collections/[id]` and the header "View all" link to `/collections`.
+- Updated `SidebarNavCollections` (`src/components/layout/sidebar-nav-collections.tsx`) with "View all collections" link pointing to `/collections` and collection links pointing to `/collections/[id]`.
+- Implemented `getCollectionItems` in `src/lib/db/collections.ts` querying items within a collection with user scoping, type accents, tag mapping, and image file attributes for `DashboardItem`.
+- Enhanced `getCollectionById` in `src/lib/db/collections.ts` with optional `userId` parameter and demo user fallback for consistent React Server Component usage.
+- Updated `src/actions/items.ts` to revalidate `/collections` and `/collections/[id]` paths on item mutations (create, update, delete).
+- Protected `/collections/:path*` route prefix with NextAuth authentication in `src/proxy.ts`.
+- Added unit tests in `tests/unit/lib/collections-query.test.ts` and integration test script in `scripts/test-collections-pages.ts`.
+- Verified 100% passing across Vitest unit tests (254/254 passed across 21 suites), 0 ESLint errors/warnings (`npm run lint`), and clean Next.js production build (`npm run build`).
+
 
 
