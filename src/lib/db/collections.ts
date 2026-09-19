@@ -258,6 +258,159 @@ export async function createCollection(
   };
 }
 
+export interface UpdateCollectionData {
+  name?: string;
+  description?: string | null;
+  color?: string | null;
+}
+
+/**
+ * Updates an existing collection for a user.
+ * Ensures the collection belongs to the target user.
+ */
+export async function updateCollection(
+  userId: string,
+  collectionId: string,
+  data: UpdateCollectionData
+): Promise<DashboardCollection> {
+  const existing = await prisma.collection.findFirst({
+    where: {
+      id: collectionId,
+      userId,
+    },
+    include: {
+      items: {
+        take: 100,
+        select: {
+          item: {
+            select: {
+              itemType: {
+                select: {
+                  name: true,
+                  icon: true,
+                  color: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          items: true,
+        },
+      },
+    },
+  });
+
+  if (!existing) {
+    throw new Error("Collection not found or unauthorized.");
+  }
+
+  const updated = await prisma.collection.update({
+    where: { id: collectionId },
+    data: {
+      ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+      ...(data.description !== undefined
+        ? { description: data.description?.trim() || null }
+        : {}),
+      ...(data.color !== undefined ? { color: data.color?.trim() || null } : {}),
+    },
+    include: {
+      items: {
+        take: 100,
+        select: {
+          item: {
+            select: {
+              itemType: {
+                select: {
+                  name: true,
+                  icon: true,
+                  color: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          items: true,
+        },
+      },
+    },
+  });
+
+  const typeMap = new Map<string, CollectionTypeInfo>();
+  for (const relation of updated.items) {
+    const it = relation.item.itemType;
+    if (!it) continue;
+    const existingType = typeMap.get(it.name);
+    if (existingType) {
+      existingType.count += 1;
+    } else {
+      typeMap.set(it.name, {
+        name: it.name,
+        icon: it.icon,
+        color: it.color,
+        count: 1,
+      });
+    }
+  }
+
+  const types = Array.from(typeMap.values()).sort((a, b) => {
+    if (b.count !== a.count) {
+      return b.count - a.count;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  const mostUsedType = types[0];
+  const accentColor = mostUsedType?.color || updated.color || "#3b82f6";
+
+  return {
+    id: updated.id,
+    name: updated.name,
+    description: updated.description,
+    isFavorite: updated.isFavorite,
+    itemCount: updated._count.items,
+    accentColor,
+    types,
+    createdAt: updated.createdAt,
+    updatedAt: updated.updatedAt,
+  };
+}
+
+/**
+ * Deletes a collection for a user.
+ * Items in this collection are NOT deleted; only the collection record
+ * and its junction links in item_collections are removed.
+ */
+export async function deleteCollection(
+  userId: string,
+  collectionId: string
+): Promise<{ success: boolean; id: string }> {
+  const existing = await prisma.collection.findFirst({
+    where: {
+      id: collectionId,
+      userId,
+    },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    throw new Error("Collection not found or unauthorized.");
+  }
+
+  // Deleting the collection cascades to delete item_collections records
+  // Items themselves remain completely intact in items table
+  await prisma.collection.delete({
+    where: { id: collectionId },
+  });
+
+  return { success: true, id: collectionId };
+}
+
 /**
  * Fetches a single collection by ID scoped to a user (defaults to demo user).
  */

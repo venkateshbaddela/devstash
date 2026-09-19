@@ -5,6 +5,8 @@ import {
   getSidebarCollections,
   getCollectionStats,
   createCollection,
+  updateCollection,
+  deleteCollection,
   getCollectionById,
   getCollectionItems,
 } from "@/lib/db/collections";
@@ -21,6 +23,8 @@ vi.mock("@/lib/prisma", () => ({
       count: vi.fn(),
       create: vi.fn(),
       findFirst: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     itemCollection: {
       findMany: vi.fn(),
@@ -431,4 +435,118 @@ describe("Collections Database Queries", () => {
       );
     });
   });
+
+  describe("updateCollection", () => {
+    it("updates collection successfully when owned by user", async () => {
+      const mockExisting = {
+        id: "col-123",
+        userId: "user-1",
+        name: "Old Name",
+        description: "Old Desc",
+        items: [],
+        _count: { items: 0 },
+      };
+      const mockUpdated = {
+        id: "col-123",
+        userId: "user-1",
+        name: "New Name",
+        description: "New Desc",
+        isFavorite: false,
+        color: null,
+        createdAt: new Date("2026-01-01"),
+        updatedAt: new Date("2026-01-02"),
+        items: [
+          {
+            item: {
+              itemType: { name: "snippet", icon: "Code", color: "#3b82f6" },
+            },
+          },
+        ],
+        _count: { items: 1 },
+      };
+
+      vi.mocked(prisma.collection.findFirst).mockResolvedValue(
+        mockExisting as never
+      );
+      vi.mocked(prisma.collection.update).mockResolvedValue(
+        mockUpdated as never
+      );
+
+      const result = await updateCollection("user-1", "col-123", {
+        name: "New Name",
+        description: "New Desc",
+      });
+
+      expect(prisma.collection.findFirst).toHaveBeenCalledWith({
+        where: { id: "col-123", userId: "user-1" },
+        include: expect.any(Object),
+      });
+
+      expect(prisma.collection.update).toHaveBeenCalledWith({
+        where: { id: "col-123" },
+        data: {
+          name: "New Name",
+          description: "New Desc",
+        },
+        include: expect.any(Object),
+      });
+
+      expect(result).toEqual({
+        id: "col-123",
+        name: "New Name",
+        description: "New Desc",
+        isFavorite: false,
+        itemCount: 1,
+        accentColor: "#3b82f6",
+        types: [{ name: "snippet", icon: "Code", color: "#3b82f6", count: 1 }],
+        createdAt: mockUpdated.createdAt,
+        updatedAt: mockUpdated.updatedAt,
+      });
+    });
+
+    it("throws error when collection is not found or unauthorized", async () => {
+      vi.mocked(prisma.collection.findFirst).mockResolvedValue(null);
+
+      await expect(
+        updateCollection("user-1", "col-nonexistent", { name: "Test" })
+      ).rejects.toThrow("Collection not found or unauthorized.");
+
+      expect(prisma.collection.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteCollection", () => {
+    it("deletes collection successfully when owned by user", async () => {
+      vi.mocked(prisma.collection.findFirst).mockResolvedValue({
+        id: "col-123",
+      } as never);
+      vi.mocked(prisma.collection.delete).mockResolvedValue({
+        id: "col-123",
+      } as never);
+
+      const result = await deleteCollection("user-1", "col-123");
+
+      expect(prisma.collection.findFirst).toHaveBeenCalledWith({
+        where: { id: "col-123", userId: "user-1" },
+        select: { id: true },
+      });
+
+      expect(prisma.collection.delete).toHaveBeenCalledWith({
+        where: { id: "col-123" },
+      });
+
+      expect(result).toEqual({ success: true, id: "col-123" });
+    });
+
+    it("throws error when collection is not found or unauthorized", async () => {
+      vi.mocked(prisma.collection.findFirst).mockResolvedValue(null);
+
+      await expect(
+        deleteCollection("user-1", "col-nonexistent")
+      ).rejects.toThrow("Collection not found or unauthorized.");
+
+      expect(prisma.collection.delete).not.toHaveBeenCalled();
+    });
+  });
 });
+

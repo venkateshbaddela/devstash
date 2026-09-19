@@ -7,6 +7,7 @@ import { getCollectionById, getCollectionItems } from "@/lib/db/collections";
 import { ItemCard } from "@/components/dashboard/item-card";
 import { ImageCard } from "@/components/items/image-card";
 import { ItemTypeIcon } from "@/lib/icons";
+import { CollectionDetailHeaderActions } from "@/components/collections/collection-detail-header-actions";
 import { CreateCollectionItemButton } from "@/components/collections/create-collection-item-button";
 
 interface CollectionDetailPageProps {
@@ -174,10 +175,8 @@ export default async function CollectionDetailPage({
           </div>
         </div>
 
-        {/* Action Button */}
-        <div className="shrink-0 pl-12 sm:pl-0">
-          <CreateCollectionItemButton collectionId={collection.id} />
-        </div>
+        {/* Header Action Buttons */}
+        <CollectionDetailHeaderActions collection={collection} />
       </div>
 
       {/* Collection Items Grid */}

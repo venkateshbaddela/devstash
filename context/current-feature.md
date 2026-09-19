@@ -1,22 +1,34 @@
-# Current Feature
+# Current Feature: Collection Actions: Edit, Delete & Favorite
 
 ---
 
 ## Status
 
-Not Started
+In Progress
 
 ---
 
 ## Goals
 
-<!-- Goals will be loaded from a feature spec or user prompt -->
+- Add action buttons on `/collections/[id]` header for Favorite (icon/button placeholder only), Edit (triggers edit modal), and Delete (triggers delete confirmation modal).
+- Create `EditCollectionDialog` component allowing users to edit collection metadata (name, description) with Zod validation, loading state, error handling, and toast feedback.
+- Create `DeleteCollectionDialog` confirmation modal with explicit notice that items will NOT be deleted, cascading deletion of collection links, and redirect to `/collections` upon deletion.
+- Update `CollectionCard` (`src/components/collections/collection-card.tsx`) to provide a 3-dots dropdown menu with Favorite, Edit, and Delete options.
+- Ensure clicking the 3-dots dropdown menu does not trigger card navigation, while clicking anywhere else on `CollectionCard` navigates to `/collections/[id]`.
+- Implement `updateCollection` and `deleteCollection` in `src/lib/db/collections.ts` with user authorization scoping and demo user fallback.
+- Implement `updateCollectionAction` and `deleteCollectionAction` in `src/actions/collections.ts` with Zod validation, NextAuth session authentication, and cache revalidation (`/collections`, `/collections/[id]`, `/dashboard`).
+- Add comprehensive Vitest unit tests covering validation, database mutations, and server actions.
+- Verify 0 ESLint errors/warnings, 100% passing Vitest unit tests, and clean production build (`npm run build`).
 
 ---
 
 ## Notes
 
-<!-- Notes and constraints will be loaded with the feature -->
+- **Favorite Button:** Per requirements, do NOT implement favorites persistence yet; only render the icon/button in the header and card dropdown.
+- **Item Safety on Collection Delete:** Deleting a collection must NOT delete any items. Only the collection record and its `ItemCollection` junction links are deleted, preserving all underlying items in the user's stash.
+- **Event Propagation:** Ensure the 3-dots dropdown button and menu items stop click propagation so the wrapping `CollectionCard` link to `/collections/[id]` does not fire.
+- **Shell & Drawer Compatibility:** Keep all collection modals compatible with `ItemDrawerProvider` toast notifications and React 19 / Next.js 16 conventions.
+- **Redirection:** When deleting a collection from its detail page (`/collections/[id]`), navigate back to `/collections` after deletion succeeds.
 
 ---
 
